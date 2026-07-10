@@ -3,20 +3,19 @@
 #include <locale>
 #include "CUnsignedBitNumber.hpp"
 
-
-
 void func1( void );
-
 void uselevel_from_test_func( void );
+void arithmeticTest( void );
 
-template<size_t BitSize  , typename BitNumberDefaultCharT> void dump_bin( const CUnsignedBitNumber<BitSize , BitNumberDefaultCharT>& num, bool withNewLine = true ) {
-	printf( "{ bin:\"%s\" , dec:\"%s\" , hex:\"%s\" }",
-		CStdBitsetUnsignedStringConversion<char>::CreateSeparatedStringWithZeroPadded( num.toBinaryString<char>(), BitSize, 4 ).c_str( ),
-		num.toDecimalString<char>( ).c_str( ),
-		num.toHexadecimalString<char>(true ).c_str( )
-	);
+template<size_t BitSize, typename BitNumberDefaultCharT> void print_bitNumberWBS( std::string prefix, const CUnsignedBitNumber<BitSize, BitNumberDefaultCharT>& num, bool withNewLine = true ) {
+
+	if ( prefix.length( ) != 0 ) printf( "%s", prefix.c_str( ) );
+
+	printf( " (%zu Bit Type) : %s", BitSize  , num.toJsonLikedString<char>().c_str());
+
 	if ( withNewLine ) printf( "\n" );
 }
+
 
 
 
@@ -28,14 +27,33 @@ int main( ) {
 	// UTF-8コードページに変更
 	SetConsoleOutputCP( CP_UTF8 );
 
+	CUnsignedBitNumber16W  base = CUnsignedBitNumber16W::FromHelpers<char>::FromHexadecimalString( "C9DB" );
+	CUnsignedBitNumber128 large( base, 60, 0 );
+
+	print_bitNumberWBS( "base", base );
+	print_bitNumberWBS( "large", large );
+	print_bitNumberWBS( "large-base", large.subtraction(base.toCast<128,char>() ));
+
+
+	CUnsignedBitNumber16W b2;
+
+	b2.fromCast( base, 0, 8 );
+
+	print_bitNumberWBS( "b2", b2 );
+
+
+
+	return 0;
+}
+
+
+void arithmeticTest( void ) {
 
 	CUnsignedBitNumber64 a = CUnsignedBitNumber64::FromHelpers<char>::FromHexadecimalString( "FB21 EF59" );
 	CUnsignedBitNumber64 b = CUnsignedBitNumber64::FromHelpers<char>::FromHexadecimalString( "843E CD60" );
 
-
-
-	printf( "a : %s\n" , a.toJsonLikedString<char>().c_str()) ;
-	printf( "b : %s\n" , b.toJsonLikedString<char>().c_str());
+	printf( "a : %s\n", a.toJsonLikedString<char>( ).c_str( ) );
+	printf( "b : %s\n", b.toJsonLikedString<char>( ).c_str( ) );
 	printf( "\n" );
 	printf( "a+b : %s\n", a.addition( b ).toJsonLikedString<char>( ).c_str( ) );
 	printf( "a-b : %s\n", a.subtraction( b ).toJsonLikedString<char>( ).c_str( ) );
@@ -47,14 +65,7 @@ int main( ) {
 		printf( "a%%b : %s\n", div_rem->second.toJsonLikedString<char>( ).c_str( ) );
 	}
 
-	auto x = a.division( b );
-	if ( x.has_value() )dump_bin( x.value() );
-	x = a.remainder( b );
-	if ( x.has_value() )dump_bin( x.value() );
-
-	return 0;
 }
-
 
 void uselevel_from_test_func( void ) {
 
@@ -110,8 +121,6 @@ void func1( void ) {
 	printf( "%S\n", CStdBitsetUnsignedStringConversion<wchar_t>::ToHexadecimalString( b ).c_str( ) );
 
 	std::wstring w( { 'a'  , 'B' , 0 } );
-
-
 
 
 	printf( "%S\n", w.c_str( ) );

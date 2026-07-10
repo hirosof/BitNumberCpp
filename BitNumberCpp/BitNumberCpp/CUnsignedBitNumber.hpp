@@ -484,34 +484,32 @@ public:
 	using SelfPair = std::pair<CUnsignedBitNumber, CUnsignedBitNumber>;
 	using SelfPairOptional = std::optional<SelfPair>;
 
-	enum struct ExtractedBitLocation {
-
-		// 最下位ビットから始める
-		LeastSignificant = 0,
-
-		// オリジナル位置に配置する
-		Original
-
-	};
 
 
+
+	// rawは外部から変更されても、本クラスの動作に影響しないため、公開範囲をpublicとする
 	StdBitset raw;
+
+	const StdBitset& rawRefConst( void ) const {
+		return raw;
+	}
 
 	CUnsignedBitNumber( )  : raw(0) {
 
 	}
 
 	CUnsignedBitNumber( uint64_t i64value ) : raw( i64value ) {}
-	CUnsignedBitNumber( StdBitset value ) : raw( value ) {}
+	CUnsignedBitNumber(const StdBitset& value ) : raw( value ) {}
+
+	template <size_t FromSize, typename FromCharType = DefaultCharType> explicit CUnsignedBitNumber( const  CUnsignedBitNumber<FromSize, FromCharType>& from , size_t self_offset_bit_number = 0, size_t from_offset_bit_number = 0 ) {
+		this->fromCast( from, self_offset_bit_number, from_offset_bit_number );
+	}
 
 	~CUnsignedBitNumber( ) {
+
 	}
 
-	template <size_t NewSize>  CUnsignedBitNumber<NewSize , DefaultCharType> castSize( )const {
-		CUnsignedBitNumber<NewSize, DefaultCharType> target;
-		target.raw = CStdBitsetUnsignedOperation::CastSize<NewSize>( this->raw );
-		return target;
-	}
+
 
 	CUnsignedBitNumber& operator+=( const CUnsignedBitNumber& rhs ) {
 		this->raw = CStdBitsetUnsignedOperation::Addition( this->raw, rhs.raw );
@@ -715,6 +713,17 @@ public:
 		return this->raw[index];
 	}
 
+
+	enum struct ExtractedBitLocation {
+
+		// 最下位ビットから始める
+		LeastSignificant = 0,
+
+		// オリジナル位置に配置する
+		Original
+
+	};
+
 	CUnsignedBitNumber extract( size_t start_index, size_t size, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const{
 		CUnsignedBitNumber result;
 		if ( size == 0 ) return result;
@@ -740,6 +749,11 @@ public:
 
 		// 以降の処理において、どちらかのindexが無効 (>=BitSize)である場合、
 		// インデックスがBitSize以降のビットの値は0(false)を持っているものとして処理を行う。
+		// なお、本クラスのインスタンス作成直後の初期値は全ビット0である。
+		//  (この位置において、変数resultの値は全ビット0である)
+		// そのため、有効範囲内の値のみを抽出することで、当該処理を完了できる。
+		// 以上が前提にあるため、以降は、有効範囲内の値を抽出する処理となっている。
+
 				
 		// 範囲外アクセスを防止するため、指定されたindex範囲をクリッピングする。
 		// また、ClipRangeIndexの処理にて、小さい方がfirstに配置されるので、
@@ -801,6 +815,10 @@ protected:
 
 public:
 
+	template <size_t NewSize , typename CharType = DefaultCharType>  CUnsignedBitNumber<NewSize, CharType> toCast( size_t self_offset_bit_number = 0 , size_t to_offset_bit_number = 0 )const {
+		return 	CUnsignedBitNumber<NewSize, CharType>( this->extract(self_offset_bit_number , NewSize ), to_offset_bit_number );
+	}
+
 	uint8_t toUInt8( size_t offset_bit_number = 0 ) const{
 		return toUIntType<uint8_t>( offset_bit_number );
 	}
@@ -818,17 +836,26 @@ public:
 	}
 
 
+	template <size_t FromSize, typename FromCharType = DefaultCharType> void fromCast(const  CUnsignedBitNumber<FromSize, FromCharType>& from, size_t self_offset_bit_number = 0 , size_t from_offset_bit_number = 0 ) {
+		this->raw = CStdBitsetUnsignedOperation::CastSize<BitSize>( from.extract(from_offset_bit_number , BitSize).raw );
+		if ( self_offset_bit_number > 0 ) this->raw <<= self_offset_bit_number;
+	}
+
+
 	void fromUInt8( uint8_t value, size_t self_offset_bit_number = 0 ) {
-		return fromUIntType( value, self_offset_bit_number );
+		fromUIntType( value, self_offset_bit_number );
 	}
+
 	void fromUInt16( uint16_t value, size_t self_offset_bit_number = 0 ) {
-		return fromUIntType( value, self_offset_bit_number );
+		fromUIntType( value, self_offset_bit_number );
 	}
+
 	void fromUInt32( uint32_t value, size_t self_offset_bit_number = 0 ) {
-		return fromUIntType( value, self_offset_bit_number );
+		fromUIntType( value, self_offset_bit_number );
 	}
+
 	void fromUInt64( uint64_t value, size_t self_offset_bit_number = 0 ) {
-		return fromUIntType( value, self_offset_bit_number );
+		fromUIntType( value, self_offset_bit_number );
 	}
 
 
@@ -840,7 +867,7 @@ public:
 	}
 
 
-	CUnsignedBitNumber accumAdditionWithCarry( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) {
+	CUnsignedBitNumber selfUpdateAdditionWithCarry( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) {
 		auto pre_result = additionWithCarry( value, input_carry, pLastCarry );
 		this->raw = pre_result.raw;
 		return pre_result;
@@ -852,7 +879,7 @@ public:
 	}
 
 
-	CUnsignedBitNumber accumAddition( const CUnsignedBitNumber& value ) {
+	CUnsignedBitNumber selfUpdateAddition( const CUnsignedBitNumber& value ) {
 		auto pre_result = addition( value );
 		this->raw = pre_result.raw;
 		return pre_result;
@@ -866,7 +893,7 @@ public:
 		return result;
 	}
 
-	CUnsignedBitNumber accumSubtraction( const CUnsignedBitNumber& value ) {
+	CUnsignedBitNumber selfUpdateSubtraction( const CUnsignedBitNumber& value ) {
 		CUnsignedBitNumber result = subtraction(value);
 		this->raw = result.raw;
 		return result;
@@ -878,7 +905,7 @@ public:
 		return result;
 	}
 
-	CUnsignedBitNumber accumMultiplication( const CUnsignedBitNumber& value )  {
+	CUnsignedBitNumber selfUpdateMultiplication( const CUnsignedBitNumber& value )  {
 		CUnsignedBitNumber result = multiplication( value );
 		this->raw = result.raw;
 		return result;
@@ -894,7 +921,7 @@ public:
 		return std::nullopt;
 	}
 
-	SelfOptional  accumDivision( const CUnsignedBitNumber& value )  {
+	SelfOptional  selfUpdateDivision( const CUnsignedBitNumber& value )  {
 		auto result = this->division( value );
 		if ( result.has_value( ) ) {
 			this->raw = result.value().raw;
@@ -911,7 +938,7 @@ public:
 		return std::nullopt;
 	}
 
-	SelfOptional  accumRemainder( const CUnsignedBitNumber& value ) {
+	SelfOptional  selfUpdateRemainder( const CUnsignedBitNumber& value ) {
 		auto result = this->remainder( value );
 		if ( result.has_value( ) ) {
 			this->raw = result.value( ).raw;
@@ -952,6 +979,8 @@ public:
 				return CompareResult::TargetGreater;
 		}
 
+		// ここには到達しないが、Visual Studio (Visual C++)における、 warning C4715 対策と、
+		// 予期しないバグに対応するため、例外を発行しておく。
 		throw std::domain_error( "CUnsignedBitNumber::compare：予定外の例外が発生しました。" );
 	}
 
@@ -1059,16 +1088,20 @@ public:
 
 };
 
-using CUnsignedBitNumber8 = CUnsignedBitNumber<8, char>;
-using CUnsignedBitNumber16 = CUnsignedBitNumber<16, char>;
-using CUnsignedBitNumber24 = CUnsignedBitNumber<24, char>;
-using CUnsignedBitNumber32 = CUnsignedBitNumber<32, char>;
-using CUnsignedBitNumber64 = CUnsignedBitNumber<64, char>;
+template <size_t BitSize> using CUnsignedBitNumberA = CUnsignedBitNumber<BitSize, char>;
+using CUnsignedBitNumber8 = CUnsignedBitNumberA<8>;
+using CUnsignedBitNumber16 = CUnsignedBitNumberA<16>;
+using CUnsignedBitNumber24 = CUnsignedBitNumberA<24>;
+using CUnsignedBitNumber32 = CUnsignedBitNumberA<32>;
+using CUnsignedBitNumber64 = CUnsignedBitNumberA<64>;
+using CUnsignedBitNumber128 = CUnsignedBitNumberA<128>;
 
+template <size_t BitSize> using CUnsignedBitNumberW = CUnsignedBitNumber<BitSize, wchar_t>;
+using CUnsignedBitNumber8W = CUnsignedBitNumberW<8>;
+using CUnsignedBitNumber16W = CUnsignedBitNumberW<16>;
+using CUnsignedBitNumber24W = CUnsignedBitNumberW<24>;
+using CUnsignedBitNumber32W = CUnsignedBitNumberW<32>;
+using CUnsignedBitNumber64W = CUnsignedBitNumberW<64>;
+using CUnsignedBitNumber128W = CUnsignedBitNumberW<128>;
 
-using CUnsignedBitNumber8W = CUnsignedBitNumber<8, wchar_t>;
-using CUnsignedBitNumber16W = CUnsignedBitNumber<16, wchar_t>;
-using CUnsignedBitNumber24W = CUnsignedBitNumber<24, wchar_t>;
-using CUnsignedBitNumber32W = CUnsignedBitNumber<32, wchar_t>;
-using CUnsignedBitNumber64W = CUnsignedBitNumber<64, wchar_t>;
 
