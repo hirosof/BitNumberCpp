@@ -27,6 +27,7 @@ int main( ) {
 	// UTF-8コードページに変更
 	SetConsoleOutputCP( CP_UTF8 );
 
+	/*
 	CUnsignedBitNumber16W  base = CUnsignedBitNumber16W::FromHelpers<char>::FromHexadecimalString( "C9DB" );
 	CUnsignedBitNumber128 large( base, 60, 0 );
 
@@ -40,7 +41,7 @@ int main( ) {
 	b2.fromCast( base, 0, 8 );
 
 	print_bitNumberWBS( "b2", b2 );
-
+	*/
 	arithmeticTest( );
 
 	return 0;
@@ -49,20 +50,23 @@ int main( ) {
 
 void arithmeticTest( void ) {
 
+
+	bool separate = true;
+
 	CUnsignedBitNumber64 a = CUnsignedBitNumber64::FromHelpers<char>::FromHexadecimalString( "FB21 EF59" );
 	CUnsignedBitNumber64 b = CUnsignedBitNumber64::FromHelpers<char>::FromHexadecimalString( "843E CD60" );
 
-	printf( "a : %s\n", a.toJsonLikedString<char>( ).c_str( ) );
-	printf( "b : %s\n", b.toJsonLikedString<char>( ).c_str( ) );
+	printf( "a : %s\n", a.toJsonLikedString<char>( separate ).c_str( ) );
+	printf( "b : %s\n", b.toJsonLikedString<char>( separate ).c_str( ) );
 	printf( "\n" );
-	printf( "a+b : %s\n", a.addition( b ).toJsonLikedString<char>( ).c_str( ) );
-	printf( "a-b : %s\n", a.subtraction( b ).toJsonLikedString<char>( ).c_str( ) );
-	printf( "a*b : %s\n", a.multiplication( b ).toJsonLikedString<char>( ).c_str( ) );
+	printf( "a+b : %s\n", a.addition( b ).toJsonLikedString<char>( separate ).c_str( ) );
+	printf( "a-b : %s\n", a.subtraction( b ).toJsonLikedString<char>( separate ).c_str( ) );
+	printf( "a*b : %s\n", a.multiplication( b ).toJsonLikedString<char>( separate ).c_str( ) );
 
 	auto div_rem = a.divisionWithRemainder( b );
 	if ( div_rem.has_value( ) ) {
-		printf( "a/b : %s\n", div_rem->first.toJsonLikedString<char>( ).c_str( ) );
-		printf( "a%%b : %s\n", div_rem->second.toJsonLikedString<char>( ).c_str( ) );
+		printf( "a/b : %s\n", div_rem->first.toJsonLikedString<char>( separate ).c_str( ) );
+		printf( "a%%b : %s\n", div_rem->second.toJsonLikedString<char>( separate ).c_str( ) );
 	}
 
 }

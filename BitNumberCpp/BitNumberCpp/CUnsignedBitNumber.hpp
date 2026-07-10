@@ -438,6 +438,14 @@ public:
 		return s;
 	}
 
+	static String CreateSpaceSeparatedString( const String& str, size_t  group_size = 3 ) {
+		return CreateSeparatedString( str, group_size, ' ' );
+	}
+
+	static String CreateCommaSeparatedString( const String& str, size_t  group_size = 3 ) {
+		return CreateSeparatedString( str, group_size, ',' );
+	}
+
 	static String CreateSeparatedStringWithPadded( const String& str, size_t  size_of_padded_str_min_length , const CharT padding_char , size_t  group_size = 3, const CharT separate_char = ' ' ) {
 		return CreateSeparatedString(
 			CreatePaddedString( str, size_of_padded_str_min_length  , padding_char),
@@ -526,107 +534,9 @@ public:
 	~CUnsignedBitNumber( ) = default;
 
 
-
-	CUnsignedBitNumber& operator+=( const CUnsignedBitNumber& rhs ) {
-		this->raw = CStdBitsetUnsignedOperation::Addition( this->raw, rhs.raw );
-		return *this;
-	}
-
-	CUnsignedBitNumber& operator-=( const CUnsignedBitNumber& rhs ) {
-		this->raw = CStdBitsetUnsignedOperation::Subtraction( this->raw, rhs.raw );
-		return *this;
-	}
-
-	CUnsignedBitNumber& operator*=( const CUnsignedBitNumber& rhs ) {
-		this->raw = CStdBitsetUnsignedOperation::Multiplication( this->raw, rhs.raw );
-		return *this;
-	}
-
-	CUnsignedBitNumber& operator/=( const CUnsignedBitNumber& rhs ) {
-
-		if(rhs.raw.none() ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
-		auto calc_result = CStdBitsetUnsignedOperation::Division( this->raw, rhs.raw );
-
-		if ( calc_result.has_value( ) ) {
-			this->raw = calc_result.value( );
-		} else {
-			throw std::domain_error( "CUnsignedBitNumber：除算の算出に失敗しました。" );
-		}
-
-		return *this;		
-	}
-
-	CUnsignedBitNumber& operator%=( const CUnsignedBitNumber& rhs ) {
-
-		if(rhs.raw.none() ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
-		auto calc_result = CStdBitsetUnsignedOperation::Remainder( this->raw, rhs.raw );
-
-		if ( calc_result.has_value( ) ) {
-			this->raw = calc_result.value( );
-		} else {
-			throw std::domain_error( "CUnsignedBitNumber：剰余の算出に失敗しました。" );
-		}
-
-		return *this;
-	}
-
-
-
-	CUnsignedBitNumber operator+( const CUnsignedBitNumber& rhs ) const{
-		CUnsignedBitNumber lhs( *this );
-		lhs += rhs;
-		return lhs;
-	}
-
-	CUnsignedBitNumber operator-( const CUnsignedBitNumber& rhs ) const{
-		CUnsignedBitNumber lhs( *this );
-		lhs -= rhs;
-		return lhs;
-	}
-
-	CUnsignedBitNumber operator*( const CUnsignedBitNumber& rhs ) const {
-		CUnsignedBitNumber lhs( *this );
-		lhs *= rhs;
-		return lhs;
-	}
-
-	CUnsignedBitNumber operator/( const CUnsignedBitNumber& rhs ) const {
-		CUnsignedBitNumber lhs( *this );
-		lhs /= rhs;
-		return lhs;
-	}
-	CUnsignedBitNumber operator%( const CUnsignedBitNumber& rhs ) const {
-		CUnsignedBitNumber lhs( *this );
-		lhs %= rhs;
-		return lhs;
-	}
-
-
-
-
-
-	CUnsignedBitNumber& operator++( ) {
-		this->raw = CStdBitsetUnsignedOperation::Increment( this->raw );
-		return *this;
-	}
-
-	CUnsignedBitNumber operator++( int ) {
-		CUnsignedBitNumber old( *this );
-		this->raw = CStdBitsetUnsignedOperation::Increment( this->raw );
-		return old;
-	}
-
-	CUnsignedBitNumber& operator--( ) {
-		this->raw = CStdBitsetUnsignedOperation::Decrement( this->raw );
-		return *this;
-	}
-
-	CUnsignedBitNumber operator--( int ) {
-		CUnsignedBitNumber old( *this );
-		this->raw = CStdBitsetUnsignedOperation::Decrement( this->raw );
-		return old;
-	}
-
+	/*
+		インデックス検証・クリップ関数
+	*/
 
 	static bool IsValidIndex( size_t index ) {
 		return ( index < BitSize );
@@ -649,6 +559,11 @@ public:
 	static StdSizeTPair  ClipRangeIndex( const StdSizeTPair& index_pair ) {
 		return ClipRangeIndex( index_pair.first, index_pair.second );
 	}
+
+
+	/*
+		ビット値のセット・アンセット系
+	*/
 
 	bool clear( size_t start_offset = 0 ) {
 		if ( start_offset == 0 ) {
@@ -725,11 +640,16 @@ public:
 	}
 
 
+	// ビット値取得
 	StdBoolOptional get( size_t index ) const {
 		if ( !IsValidIndex( index ) ) return std::nullopt;
 		return this->raw[index];
 	}
 
+
+	/*
+		値の抽出系
+	*/
 
 	enum struct ExtractedBitLocation {
 
@@ -788,7 +708,10 @@ public:
 
 protected:
 
-
+	/*
+		unsigned int系への変換テンプレート関数
+	*/
+	
 	template<typename UIntTypeName> UIntTypeName toUIntType( size_t offset_bit_number = 0 ) const{
 
 		if ( !IsValidIndex( offset_bit_number ) ) {
@@ -810,6 +733,9 @@ protected:
 		return result;
 	}
 
+	/*
+		unsigned int系からの変換テンプレート関数
+	*/
 	template<typename UIntTypeName> void fromUIntType( UIntTypeName value , size_t self_offset_bit_number = 0 )  {
 
 		size_t value_bit_size = std::min( BitSize, sizeof( UIntTypeName ) * 8 );
@@ -832,6 +758,10 @@ protected:
 
 public:
 
+
+	/*
+		他へのキャスト系関数
+	*/
 	template <size_t NewSize , typename CharType = DefaultCharType>  CUnsignedBitNumber<NewSize, CharType> toCast( size_t self_offset_bit_number = 0 , size_t to_offset_bit_number = 0 )const {
 		return 	CUnsignedBitNumber<NewSize, CharType>( this->extract(self_offset_bit_number , NewSize ), to_offset_bit_number );
 	}
@@ -853,6 +783,9 @@ public:
 	}
 
 
+	/*
+		他からのキャスト系関数
+	*/
 	template <size_t FromSize, typename FromCharType = DefaultCharType> void fromCast(const  CUnsignedBitNumber<FromSize, FromCharType>& from, size_t self_offset_bit_number = 0 , size_t from_offset_bit_number = 0 ) {
 		this->raw = CStdBitsetUnsignedOperation::CastSize<BitSize>( from.extract(from_offset_bit_number , BitSize).raw );
 		if ( self_offset_bit_number > 0 ) this->raw <<= self_offset_bit_number;
@@ -876,8 +809,9 @@ public:
 	}
 
 
-
-
+	/*
+		加算系の実装
+	*/
 	CUnsignedBitNumber additionWithCarryParam( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) const{
 		auto pre_result = CStdBitsetUnsignedOperation::Addition<BitSize>( this->raw, value.raw, input_carry, pLastCarry );
 		return CUnsignedBitNumber( pre_result );
@@ -903,10 +837,39 @@ public:
 	}
 
 
+	CUnsignedBitNumber& operator+=( const CUnsignedBitNumber& rhs ) {
+		this->selfUpdateAddition( rhs );
+		return *this;
+	}
+
+
+	CUnsignedBitNumber operator+( const CUnsignedBitNumber& rhs ) const {
+		CUnsignedBitNumber lhs( *this );
+		lhs += rhs;
+		return lhs;
+	}
+
+
+	CUnsignedBitNumber& operator++( ) {
+		this->raw = CStdBitsetUnsignedOperation::Increment( this->raw );
+		return *this;
+	}
+
+	CUnsignedBitNumber operator++( int ) {
+		CUnsignedBitNumber old( *this );
+		this->raw = CStdBitsetUnsignedOperation::Increment( this->raw );
+		return old;
+	}
+
+
+	/*
+	
+		減算系の実装
+	*/
 
 	CUnsignedBitNumber subtraction( const CUnsignedBitNumber& value )const {
-		CUnsignedBitNumber result( *this );
-		result -= value;
+		CUnsignedBitNumber result;
+		result.raw = CStdBitsetUnsignedOperation::Subtraction( this->raw, value.raw );
 		return result;
 	}
 
@@ -916,9 +879,39 @@ public:
 		return result;
 	}
 
+	CUnsignedBitNumber& operator-=( const CUnsignedBitNumber& rhs ) {
+		this->selfUpdateSubtraction( rhs );
+		return *this;
+	}
+
+
+
+	CUnsignedBitNumber operator-( const CUnsignedBitNumber& rhs ) const {
+		CUnsignedBitNumber lhs( *this );
+		lhs -= rhs;
+		return lhs;
+	}
+
+
+	CUnsignedBitNumber& operator--( ) {
+		this->raw = CStdBitsetUnsignedOperation::Decrement( this->raw );
+		return *this;
+	}
+
+	CUnsignedBitNumber operator--( int ) {
+		CUnsignedBitNumber old( *this );
+		this->raw = CStdBitsetUnsignedOperation::Decrement( this->raw );
+		return old;
+	}
+
+
+	/*
+		掛け算
+	*/
+
 	CUnsignedBitNumber multiplication( const CUnsignedBitNumber& value ) const {
-		CUnsignedBitNumber result( *this );
-		result *= value;
+		CUnsignedBitNumber result;
+		result.raw = CStdBitsetUnsignedOperation::Multiplication( this->raw, value.raw );
 		return result;
 	}
 
@@ -928,7 +921,20 @@ public:
 		return result;
 	}
 
+	CUnsignedBitNumber& operator*=( const CUnsignedBitNumber& rhs ) {
+		this->selfUpdateMultiplication( rhs );
+		return *this;
+	}
 
+	CUnsignedBitNumber operator*( const CUnsignedBitNumber& rhs ) const {
+		CUnsignedBitNumber lhs( *this );
+		lhs *= rhs;
+		return lhs;
+	}
+
+	/*
+		除算
+	*/
 	SelfOptional  division( const CUnsignedBitNumber& value) const{
 		auto pre_result = this->divisionWithRemainder( value );
 		if ( pre_result.has_value( ) ) {
@@ -946,6 +952,34 @@ public:
 		return result;
 	}
 
+
+	CUnsignedBitNumber& operator/=( const CUnsignedBitNumber& rhs ) {
+
+		if ( rhs.raw.none( ) ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
+
+		SelfOptional result = this->selfUpdateDivision( rhs );
+
+		if ( !result.has_value( ) ) {
+			// 本オペレータの初回実装時において、ここのブロックは(先に0除算チェックをしている影響で)
+			// 実行されないが念のため、例外を発行しておく
+			throw std::domain_error( "CUnsignedBitNumber：除算の算出に失敗しました。" );
+		}
+
+		return *this;
+	}
+
+	CUnsignedBitNumber operator/( const CUnsignedBitNumber& rhs ) const {
+		CUnsignedBitNumber lhs( *this );
+		lhs /= rhs;
+		return lhs;
+	}
+
+
+
+
+	/*
+		剰余
+	*/
 	SelfOptional remainder( const CUnsignedBitNumber& value ) const{
 		auto pre_result = this->divisionWithRemainder( value );
 		if ( pre_result.has_value( ) ) {
@@ -955,6 +989,30 @@ public:
 		return std::nullopt;
 	}
 
+	CUnsignedBitNumber& operator%=( const CUnsignedBitNumber& rhs ) {
+
+		if ( rhs.raw.none( ) ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
+
+		SelfOptional result = this->selfUpdateRemainder( rhs );
+
+		if ( !result.has_value( ) ) {
+			// 本オペレータの初回実装時において、ここのブロックは(先に0除算チェックをしている影響で)
+			// 実行されないが念のため、例外を発行しておく
+			throw std::domain_error( "CUnsignedBitNumber：剰余の算出に失敗しました。" );
+		}
+
+		return *this;
+	}
+
+	CUnsignedBitNumber operator%( const CUnsignedBitNumber& rhs ) const {
+		CUnsignedBitNumber lhs( *this );
+		lhs %= rhs;
+		return lhs;
+	}
+
+	/*
+		除算・剰余
+	*/
 	SelfOptional  selfUpdateRemainder( const CUnsignedBitNumber& value ) {
 		auto result = this->remainder( value );
 		if ( result.has_value( ) ) {
@@ -975,6 +1033,11 @@ public:
 		return CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( this->raw );
 	}
 
+
+
+	/*
+		比較系
+	*/
 
 	enum struct CompareResult {
 		SelfGreater = 0,
@@ -1012,8 +1075,13 @@ public:
 		return  CUnsignedBitNumber( value );
 	}
 
-	template<typename CharT = DefaultCharType> std::basic_string<CharT> toJsonLikedString( )const {
-		std::basic_string<CharT> s;
+
+	/*
+		文字列への変換系
+	*/
+
+	template<typename CharT = DefaultCharType> std::basic_string<CharT> toJsonLikedString( bool enableSeparate = false )const {
+		std::basic_string<CharT> s , trans;
 
 		//open block
 		s.push_back( '{' );
@@ -1026,7 +1094,12 @@ public:
 		//bin
 		s.append( { '\"' ,  'b' , 'i' , 'n' , '\"' ,  ':' , '\"' } );
 
-		s.append( Conv::CreateSeparatedStringWithZeroPadded( this->toBinaryString<CharT>( ), BitSize, 4 ) );
+		trans = this->toBinaryString<CharT>( );
+		if ( enableSeparate ) {
+			s.append( Conv::CreateSpaceSeparatedString ( trans, 4 ) );
+		} else {
+			s.append( trans );
+		}
 
 		s.push_back( '\"' );
 
@@ -1035,7 +1108,13 @@ public:
 		s.append( { ' ', ',', ' ' } );
 		s.append( { '\"' ,  'd' , 'e' , 'c' , '\"' ,  ':' , '\"' } );
 
-		s.append( this->toDecimalString<CharT>( ));
+		trans = this->toDecimalString<CharT>( );
+		if ( enableSeparate ) {
+			s.append( Conv::CreateCommaSeparatedString( trans, 3 ) );
+		} else {
+			s.append( trans );
+		}
+
 
 		s.push_back( '\"' );
 
@@ -1044,10 +1123,14 @@ public:
 		s.append( { ' ', ',', ' ' } );
 		s.append( { '\"' ,  'h' , 'e' , 'x' , '\"' ,  ':' , '\"' } );
 
-		s.append( this->toHexadecimalString<CharT>( true)  );
+		trans = this->toHexadecimalString<CharT>( true );
+		if ( enableSeparate ) {
+			s.append( Conv::CreateSpaceSeparatedString( trans, 4 ) );
+		} else {
+			s.append( trans );
+		}
 
 		s.push_back( '\"' );
-
 
 		//close block
 		s.push_back( ' ' );
@@ -1068,6 +1151,11 @@ public:
 		return CStdBitsetUnsignedStringConversion<CharT>::ToHexadecimalString( this->raw  , upper_case);
 	}
 
+
+	/*
+		文字列からの変換系
+	*/
+
 	template<typename CharT = DefaultCharType> void  fromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromBinaryString< BitSize>( str, valid_separators );
 	}
@@ -1081,6 +1169,9 @@ public:
 	}
 
 
+	/*
+		ヘルパークラス
+	*/
 	template<typename CharT = DefaultCharType> class FromHelpers {
 	public:
 		static CUnsignedBitNumber  FromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
