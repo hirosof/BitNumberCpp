@@ -260,9 +260,8 @@ template <typename CharT> class CStdBitsetUnsignedStringConversion {
 public:
 	using String = std::basic_string<CharT>;
 
-	template<size_t BitSize> using StdBitset = std::bitset<BitSize>;
-	template<size_t BitSize> using StdBitsetConstRef = const StdBitset<BitSize>&;
-
+	template<size_t BitSize> using StdBitset = CStdBitsetUnsignedOperation::StdBitset<BitSize>;
+	template<size_t BitSize> using StdBitsetConstRef = CStdBitsetUnsignedOperation::StdBitsetConstRef<BitSize>;
 	template <size_t BitSize> using OptionalStdBitsetPair = CStdBitsetUnsignedOperation::OptionalStdBitsetPair<BitSize>;
 
 
@@ -474,91 +473,68 @@ public:
 };
 
 template<size_t BitSize , typename DefaultCharType = char> class CUnsignedBitNumber {
+public:
 	static_assert( BitSize > 0, "BitSizeは無効な値です。" );
-
-public:
-
+	
 	using StdBitset = std::bitset<BitSize>;
-
-	using ReferenceTypeWithInStdBitset = typename StdBitset::reference;
 	using StdBoolOptional = std::optional<bool>;
+	using StdSizeTPair = std::pair<size_t, size_t>;
+
+	using SelfOptional = std::optional<CUnsignedBitNumber>;
+	using SelfPair = std::pair<CUnsignedBitNumber, CUnsignedBitNumber>;
+	using SelfPairOptional = std::optional<SelfPair>;
+
+	enum struct ExtractedBitLocation {
+
+		// 最下位ビットから始める
+		LeastSignificant = 0,
+
+		// オリジナル位置に配置する
+		Original
+
+	};
 
 
+	StdBitset raw;
 
-private:
-	StdBitset m_bitData;
-	template<size_t , typename> friend class CUnsignedBitNumber;
-
-public:
-
-	CUnsignedBitNumber( )  : m_bitData(0) {
+	CUnsignedBitNumber( )  : raw(0) {
 
 	}
 
-	CUnsignedBitNumber(uint64_t i64value ) : m_bitData( i64value){
-	}
+	CUnsignedBitNumber( uint64_t i64value ) : raw( i64value ) {}
+	CUnsignedBitNumber( StdBitset value ) : raw( value ) {}
 
 	~CUnsignedBitNumber( ) {
 	}
 
-
-	StdBitset* getStdBitsetPointer( void ) {
-		return &this->m_bitData;
-	}
-
-	StdBitset* operator -> ( void ) {
-		return this->getStdBitsetPointer( );
-	}
-
-	void fromStdBitset( const StdBitset& ref_sb ){
-		this->m_bitData = ref_sb;
-	}
-
-	StdBitset toStdBitset( void )const {
-		return this->m_bitData;
-	}
-
-	StdBitset& toStdBitsetRef( void ) {
-		return this->m_bitData;
-	}
-
 	template <size_t NewSize>  CUnsignedBitNumber<NewSize , DefaultCharType> castSize( )const {
 		CUnsignedBitNumber<NewSize, DefaultCharType> target;
-		target.m_bitData = CStdBitsetUnsignedOperation::CastSize<NewSize>( this->m_bitData );
+		target.raw = CStdBitsetUnsignedOperation::CastSize<NewSize>( this->raw );
 		return target;
 	}
 
-	bool operator[]( size_t index ) const{
-		return this->m_bitData[index];
-	}
-
-	ReferenceTypeWithInStdBitset operator[]( size_t index ) {
-		return this->m_bitData[index];
-	}
-
-
 	CUnsignedBitNumber& operator+=( const CUnsignedBitNumber& rhs ) {
-		this->m_bitData = CStdBitsetUnsignedOperation::Addition( this->m_bitData, rhs.m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Addition( this->raw, rhs.raw );
 		return *this;
 	}
 
 	CUnsignedBitNumber& operator-=( const CUnsignedBitNumber& rhs ) {
-		this->m_bitData = CStdBitsetUnsignedOperation::Subtraction( this->m_bitData, rhs.m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Subtraction( this->raw, rhs.raw );
 		return *this;
 	}
 
 	CUnsignedBitNumber& operator*=( const CUnsignedBitNumber& rhs ) {
-		this->m_bitData = CStdBitsetUnsignedOperation::Multiplication( this->m_bitData, rhs.m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Multiplication( this->raw, rhs.raw );
 		return *this;
 	}
 
 	CUnsignedBitNumber& operator/=( const CUnsignedBitNumber& rhs ) {
 
-		if(rhs.m_bitData.none() ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
-		auto calc_result = CStdBitsetUnsignedOperation::Division( this->m_bitData, rhs.m_bitData );
+		if(rhs.raw.none() ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
+		auto calc_result = CStdBitsetUnsignedOperation::Division( this->raw, rhs.raw );
 
 		if ( calc_result.has_value( ) ) {
-			this->m_bitData = calc_result.value( );
+			this->raw = calc_result.value( );
 		} else {
 			throw std::domain_error( "CUnsignedBitNumber：除算の算出に失敗しました。" );
 		}
@@ -568,17 +544,19 @@ public:
 
 	CUnsignedBitNumber& operator%=( const CUnsignedBitNumber& rhs ) {
 
-		if(rhs.m_bitData.none() ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
-		auto calc_result = CStdBitsetUnsignedOperation::Remainder( this->m_bitData, rhs.m_bitData );
+		if(rhs.raw.none() ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
+		auto calc_result = CStdBitsetUnsignedOperation::Remainder( this->raw, rhs.raw );
 
 		if ( calc_result.has_value( ) ) {
-			this->m_bitData = calc_result.value( );
+			this->raw = calc_result.value( );
 		} else {
 			throw std::domain_error( "CUnsignedBitNumber：剰余の算出に失敗しました。" );
 		}
 
 		return *this;
 	}
+
+
 
 	CUnsignedBitNumber operator+( const CUnsignedBitNumber& rhs ) const{
 		CUnsignedBitNumber lhs( *this );
@@ -610,54 +588,454 @@ public:
 	}
 
 
+
+
+
 	CUnsignedBitNumber& operator++( ) {
-		this->m_bitData = CStdBitsetUnsignedOperation::Increment( this->m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Increment( this->raw );
 		return *this;
 	}
 
 	CUnsignedBitNumber operator++( int ) {
 		CUnsignedBitNumber old( *this );
-		this->m_bitData = CStdBitsetUnsignedOperation::Increment( this->m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Increment( this->raw );
 		return old;
 	}
 
 	CUnsignedBitNumber& operator--( ) {
-		this->m_bitData = CStdBitsetUnsignedOperation::Decrement( this->m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Decrement( this->raw );
 		return *this;
 	}
 
 	CUnsignedBitNumber operator--( int ) {
 		CUnsignedBitNumber old( *this );
-		this->m_bitData = CStdBitsetUnsignedOperation::Decrement( this->m_bitData );
+		this->raw = CStdBitsetUnsignedOperation::Decrement( this->raw );
 		return old;
 	}
 
+
+	static bool IsValidIndex( size_t index ) {
+		return ( index < BitSize );
+	}
+
+	static bool IsValidRangeIndex( size_t index1 , size_t index2 ) {
+		return IsValidIndex( index1 ) && IsValidIndex( index2 );
+	}
+
+	static size_t ClipIndex( size_t index ) {
+		return std::min( index, BitSize - 1 );
+	}
+
+	static StdSizeTPair  ClipRangeIndex( size_t index1 , size_t index2 ) {
+		size_t n1 = ClipIndex( index1 );
+		size_t n2 = ClipIndex( index2 );
+		return ( n1 <= n2 ) ? StdSizeTPair( n1, n2 ) : StdSizeTPair( n2, n1 );
+	}
+
+	static StdSizeTPair  ClipRangeIndex( const StdSizeTPair& index_pair ) {
+		return ClipRangeIndex( index_pair.first, index_pair.second );
+	}
+
+	bool clear( size_t start_offset = 0 ) {
+		if ( start_offset == 0 ) {
+			this->raw.reset( );
+			return true;
+		}
+		if ( start_offset >= BitSize ) return false;
+		return this->rangeSetIndex( start_offset, BitSize - 1, false );
+	}
+
+	bool fill( size_t start_offset = 0 ) {
+		if ( start_offset == 0 ) {
+			this->raw.set( );
+			return true;
+		} 
+		if ( start_offset >= BitSize ) return false;
+		return this->rangeSetIndex( start_offset, BitSize - 1  , true);
+	}
+
+
+	bool set( size_t index, bool  value = true ) {
+		if ( !IsValidIndex(index) ) return false;
+		this->raw[index] = value;
+		return true;
+	}
+
+	bool rangeSet( size_t start_index , size_t size, bool value = true ) {
+		if ( size == 0 )return true;
+		return rangeSetIndex( start_index, start_index + size - 1, value );
+	}
+
+	bool rangeSetIndex( size_t index1, size_t index2, bool value = true ) {
+		if ( !IsValidRangeIndex( index1, index2 ) ) return false;
+		if ( index1 == index2 ) return this->set( index1, value );
+
+		size_t start_index, end_index;
+
+		if ( index1 < index2 ) {
+			start_index = index1;
+			end_index = index2;
+		} else {
+			start_index = index2;
+			end_index = index1;
+		}
+
+		for ( size_t i = start_index; i <= end_index ; i++ ) {
+			this->raw[i] = value;
+		}
+
+		return true;
+	}
+
+	bool rangeSetIndex(const StdSizeTPair& index_pair, bool value = true ) {
+		return rangeSetIndex( index_pair.first, index_pair.second, value );
+	}
+
+
+	bool unset( size_t index ) {
+		return this->set( index, false );
+	}
+
+	bool rangeUnset( size_t start_index, size_t size ) {
+		return rangeUnsetIndex( start_index, start_index + size - 1 );
+	}
+
+
+	bool rangeUnsetIndex( size_t index1, size_t index2 ) {
+		return rangeSetIndex( index1, index2, false );
+	}
+
+	bool rangeUnsetIndex( const StdSizeTPair& index_pair ) {
+		return rangeUnsetIndex( index_pair.first, index_pair.second );
+	}
+
+
+	StdBoolOptional get( size_t index ) const {
+		if ( !IsValidIndex( index ) ) return std::nullopt;
+		return this->raw[index];
+	}
+
+	CUnsignedBitNumber extract( size_t start_index, size_t size, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const{
+		CUnsignedBitNumber result;
+		if ( size == 0 ) return result;
+		if ( !IsValidIndex( start_index ) ) return result;
+		return this->extractIndex( start_index, ClipIndex(start_index + std::min(BitSize , size) - 1), extracted_bit_location );
+	}
+
+
+
+
+	template <typename T> CUnsignedBitNumber extract( size_t start_index, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const{
+		return this->extract( start_index, sizeof( T ) * 8, extracted_bit_location );
+	}
+
+	CUnsignedBitNumber extractIndex( size_t index1, size_t index2, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
+
+		if ( !( IsValidIndex( index1 ) || IsValidIndex( index2 ) ) ) {
+			// 指定されたindexがどちらも無効な場合、 すなわち、抽出するべき値がない場合、抽出した値は0である。
+			return CUnsignedBitNumber( 0 );
+		} 
+		
+		CUnsignedBitNumber result;
+
+		// 以降の処理において、どちらかのindexが無効 (>=BitSize)である場合、
+		// インデックスがBitSize以降のビットの値は0(false)を持っているものとして処理を行う。
+				
+		// 範囲外アクセスを防止するため、指定されたindex範囲をクリッピングする。
+		// また、ClipRangeIndexの処理にて、小さい方がfirstに配置されるので、
+		// indexの大小関係もついでに解決できる。
+		StdSizeTPair range = ClipRangeIndex( index1, index2 );
+
+		size_t start_index_for_result = ( extracted_bit_location == ExtractedBitLocation::Original ) ? range.first : 0;
+
+		for ( size_t i = range.first; i <= range.second; i++ ) {
+			result.raw[i + start_index_for_result - range.first] = this->raw[i];
+		}
+		return result;
+
+	}
+
+protected:
+
+
+	template<typename UIntTypeName> UIntTypeName toUIntType( size_t offset_bit_number = 0 ) const{
+
+		if ( !IsValidIndex( offset_bit_number ) ) {
+			return 0;
+		}
+
+		CUnsignedBitNumber extracted_value = extract<UIntTypeName>( offset_bit_number, ExtractedBitLocation::LeastSignificant );
+
+		UIntTypeName result = 0;
+
+		size_t result_bit_size = std::min(BitSize , sizeof( UIntTypeName ) * 8);
+
+		for ( size_t i = 0; i < result_bit_size; i++ ) {
+			if ( extracted_value.raw[i] ) {
+				result |= static_cast<UIntTypeName>(1) << i;
+			}
+		}
+
+		return result;
+	}
+
+	template<typename UIntTypeName> void fromUIntType( UIntTypeName value , size_t self_offset_bit_number = 0 )  {
+
+		size_t value_bit_size = std::min( BitSize, sizeof( UIntTypeName ) * 8 );
+		
+		clear( );
+
+		if ( IsValidIndex( self_offset_bit_number ) ) {
+
+			size_t size = std::min( BitSize - self_offset_bit_number, value_bit_size );
+
+			for ( size_t i = 0; i < size; i++ ) {
+				if ( value & ( static_cast<UIntTypeName>( 1 ) << i ) ) {
+					this->raw[i + self_offset_bit_number] = true;
+				}
+			}
+		}
+
+	}
+
+
+public:
+
+	uint8_t toUInt8( size_t offset_bit_number = 0 ) const{
+		return toUIntType<uint8_t>( offset_bit_number );
+	}
+
+	uint16_t toUInt16( size_t offset_bit_number = 0 ) const{
+		return toUIntType<uint16_t>( offset_bit_number );
+	}
+	
+	uint32_t toUInt32( size_t offset_bit_number = 0 ) const{
+		return toUIntType<uint32_t>( offset_bit_number );
+	}
+
+	uint64_t toUInt64( size_t offset_bit_number = 0 ) const{
+		return toUIntType<uint64_t>( offset_bit_number );
+	}
+
+
+	void fromUInt8( uint8_t value, size_t self_offset_bit_number = 0 ) {
+		return fromUIntType( value, self_offset_bit_number );
+	}
+	void fromUInt16( uint16_t value, size_t self_offset_bit_number = 0 ) {
+		return fromUIntType( value, self_offset_bit_number );
+	}
+	void fromUInt32( uint32_t value, size_t self_offset_bit_number = 0 ) {
+		return fromUIntType( value, self_offset_bit_number );
+	}
+	void fromUInt64( uint64_t value, size_t self_offset_bit_number = 0 ) {
+		return fromUIntType( value, self_offset_bit_number );
+	}
+
+
+
+
+	CUnsignedBitNumber additionWithCarry( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) const{
+		auto pre_result = CStdBitsetUnsignedOperation::Addition<BitSize>( this->raw, value.raw, input_carry, pLastCarry );
+		return CUnsignedBitNumber( pre_result );
+	}
+
+
+	CUnsignedBitNumber accumAdditionWithCarry( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) {
+		auto pre_result = additionWithCarry( value, input_carry, pLastCarry );
+		this->raw = pre_result.raw;
+		return pre_result;
+	}
+
+
+	CUnsignedBitNumber addition( const CUnsignedBitNumber& value) const {
+		return additionWithCarry( value, false, nullptr );
+	}
+
+
+	CUnsignedBitNumber accumAddition( const CUnsignedBitNumber& value ) {
+		auto pre_result = addition( value );
+		this->raw = pre_result.raw;
+		return pre_result;
+	}
+
+
+
+	CUnsignedBitNumber subtraction( const CUnsignedBitNumber& value )const {
+		CUnsignedBitNumber result( *this );
+		result -= value;
+		return result;
+	}
+
+	CUnsignedBitNumber accumSubtraction( const CUnsignedBitNumber& value ) {
+		CUnsignedBitNumber result = subtraction(value);
+		this->raw = result.raw;
+		return result;
+	}
+
+	CUnsignedBitNumber multiplication( const CUnsignedBitNumber& value ) const {
+		CUnsignedBitNumber result( *this );
+		result *= value;
+		return result;
+	}
+
+	CUnsignedBitNumber accumMultiplication( const CUnsignedBitNumber& value )  {
+		CUnsignedBitNumber result = multiplication( value );
+		this->raw = result.raw;
+		return result;
+	}
+
+
+	SelfOptional  division( const CUnsignedBitNumber& value) const{
+		auto pre_result = this->divisionWithRemainder( value );
+		if ( pre_result.has_value( ) ) {
+			CUnsignedBitNumber result( pre_result->first );
+			return result;
+		}
+		return std::nullopt;
+	}
+
+	SelfOptional  accumDivision( const CUnsignedBitNumber& value )  {
+		auto result = this->division( value );
+		if ( result.has_value( ) ) {
+			this->raw = result.value().raw;
+		}
+		return result;
+	}
+
+	SelfOptional remainder( const CUnsignedBitNumber& value ) const{
+		auto pre_result = this->divisionWithRemainder( value );
+		if ( pre_result.has_value( ) ) {
+			CUnsignedBitNumber result( pre_result->second);
+			return result;
+		}
+		return std::nullopt;
+	}
+
+	SelfOptional  accumRemainder( const CUnsignedBitNumber& value ) {
+		auto result = this->remainder( value );
+		if ( result.has_value( ) ) {
+			this->raw = result.value( ).raw;
+		}
+		return result;
+	}
+
+	SelfPairOptional  divisionWithRemainder( const CUnsignedBitNumber& value) const{
+		auto pre_result = CStdBitsetUnsignedOperation::DivisionWithRemainder<BitSize>( this->raw, value.raw );
+		if ( pre_result.has_value( ) ) {
+			return SelfPair( CUnsignedBitNumber( pre_result->first ), CUnsignedBitNumber( pre_result->second ) );
+		}
+		return std::nullopt;
+	}
+
+	size_t getNumberOfBinaryDigitsForDisplay( void )const {
+		return CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( this->raw );
+	}
+
+
+	enum struct CompareResult {
+		SelfGreater = 0,
+		Equal,
+		TargetGreater
+	};
+
+
+	CompareResult compare( const CUnsignedBitNumber& target ) const{
+
+		CStdBitsetUnsignedOperation::CompareResult  cr = CStdBitsetUnsignedOperation::Compare( this->raw, target.raw );
+
+		switch ( cr ) {
+			case CStdBitsetUnsignedOperation::CompareResult::LeftGreater:
+				return CompareResult::SelfGreater;
+			case CStdBitsetUnsignedOperation::CompareResult::Equal:
+				return CompareResult::Equal;
+			case CStdBitsetUnsignedOperation::CompareResult::RightGreater:
+				return CompareResult::TargetGreater;
+		}
+
+		throw std::domain_error( "CUnsignedBitNumber::compare：予定外の例外が発生しました。" );
+	}
+
+
+	static  CUnsignedBitNumber  Max( const CUnsignedBitNumber& number1, const CUnsignedBitNumber& number2 ) {
+		auto value = CStdBitsetUnsignedOperation::Max( number1.raw, number2.raw );
+		return  CUnsignedBitNumber( value );
+	}
+
+	static  CUnsignedBitNumber  Min( const CUnsignedBitNumber& number1, const CUnsignedBitNumber& number2 ) {
+		auto value = CStdBitsetUnsignedOperation::Min( number1.raw, number2.raw );
+		return  CUnsignedBitNumber( value );
+	}
+
+	template<typename CharT = DefaultCharType> std::basic_string<CharT> toJsonLikedString( )const {
+		std::basic_string<CharT> s;
+
+		//open block
+		s.push_back( '{' );
+		s.push_back( ' ' );
+
+
+		// CStdBitsetUnsignedStringConversionのフルクラス名が少々長いため別名としてConvを定義
+		using Conv = CStdBitsetUnsignedStringConversion<CharT>;
+		
+		//bin
+		s.append( { '\"' ,  'b' , 'i' , 'n' , '\"' ,  ':' , '\"' } );
+
+		s.append( Conv::CreateSeparatedStringWithZeroPadded( this->toBinaryString<CharT>( ), BitSize, 4 ) );
+
+		s.push_back( '\"' );
+
+
+		//dec
+		s.append( { ' ', ',', ' ' } );
+		s.append( { '\"' ,  'd' , 'e' , 'c' , '\"' ,  ':' , '\"' } );
+
+		s.append( this->toDecimalString<CharT>( ));
+
+		s.push_back( '\"' );
+
+
+		//hex
+		s.append( { ' ', ',', ' ' } );
+		s.append( { '\"' ,  'h' , 'e' , 'x' , '\"' ,  ':' , '\"' } );
+
+		s.append( this->toHexadecimalString<CharT>( true)  );
+
+		s.push_back( '\"' );
+
+
+		//close block
+		s.push_back( ' ' );
+		s.push_back( '}' );
+
+		return s;
+	}
+
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toBinaryString( )const {
-		return CStdBitsetUnsignedStringConversion<CharT>::ToBinaryString( this->m_bitData );
+		return CStdBitsetUnsignedStringConversion<CharT>::ToBinaryString( this->raw );
 	}
 
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toDecimalString( )const {
-		return CStdBitsetUnsignedStringConversion<CharT>::ToDecimalString( this->m_bitData );
+		return CStdBitsetUnsignedStringConversion<CharT>::ToDecimalString( this->raw );
 	}
 
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toHexadecimalString(  bool upper_case = false ) const{
-		return CStdBitsetUnsignedStringConversion<CharT>::ToHexadecimalString( this->m_bitData  , upper_case);
+		return CStdBitsetUnsignedStringConversion<CharT>::ToHexadecimalString( this->raw  , upper_case);
 	}
 
 	template<typename CharT = DefaultCharType> void  fromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		this->m_bitData = CStdBitsetUnsignedStringConversion<CharT>::FromBinaryString< BitSize>( str, valid_separators );
+		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromBinaryString< BitSize>( str, valid_separators );
 	}
 
 	template<typename CharT = DefaultCharType> void  fromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		this->m_bitData = CStdBitsetUnsignedStringConversion<CharT>::FromDecimalString< BitSize>( str, valid_separators );
+		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromDecimalString< BitSize>( str, valid_separators );
 	}
 
 	template<typename CharT = DefaultCharType> void  fromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		this->m_bitData = CStdBitsetUnsignedStringConversion<CharT>::FromHexadecimalString< BitSize>( str, valid_separators );
+		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromHexadecimalString< BitSize>( str, valid_separators );
 	}
 
 
-	template<typename CharT = DefaultCharType> class StringHelpers {
+	template<typename CharT = DefaultCharType> class FromHelpers {
 	public:
 		static CUnsignedBitNumber  FromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
 			CUnsignedBitNumber ubn;
@@ -678,8 +1056,6 @@ public:
 		}
 
 	};
-
-
 
 };
 

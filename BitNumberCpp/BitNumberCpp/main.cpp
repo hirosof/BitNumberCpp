@@ -5,7 +5,18 @@
 
 
 
-void func1( void);
+void func1( void );
+
+void uselevel_from_test_func( void );
+
+template<size_t BitSize  , typename BitNumberDefaultCharT> void dump_bin( const CUnsignedBitNumber<BitSize , BitNumberDefaultCharT>& num, bool withNewLine = true ) {
+	printf( "{ bin:\"%s\" , dec:\"%s\" , hex:\"%s\" }",
+		CStdBitsetUnsignedStringConversion<char>::CreateSeparatedStringWithZeroPadded( num.toBinaryString<char>(), BitSize, 4 ).c_str( ),
+		num.toDecimalString<char>( ).c_str( ),
+		num.toHexadecimalString<char>(true ).c_str( )
+	);
+	if ( withNewLine ) printf( "\n" );
+}
 
 
 
@@ -18,33 +29,61 @@ int main( ) {
 	SetConsoleOutputCP( CP_UTF8 );
 
 
-	CUnsignedBitNumber8 a;
+	CUnsignedBitNumber64 a = CUnsignedBitNumber64::FromHelpers<char>::FromHexadecimalString( "FB21 EF59" );
+	CUnsignedBitNumber64 b = CUnsignedBitNumber64::FromHelpers<char>::FromHexadecimalString( "843E CD60" );
 
-	a.fromDecimalString<char>( "0" );
-	for ( size_t i = 0; i < 256; i++ ) {
 
-		printf( "%s : %s\n",
-			CStdBitsetUnsignedStringConversion<char>::CreateSeparatedStringWithZeroPadded( a.toBinaryString( ), 8, 4 ).c_str(),
-			a.toDecimalString().c_str()
-		);
 
-		++a;
-	}
-
+	printf( "a : %s\n" , a.toJsonLikedString<char>().c_str()) ;
+	printf( "b : %s\n" , b.toJsonLikedString<char>().c_str());
 	printf( "\n" );
+	printf( "a+b : %s\n", a.addition( b ).toJsonLikedString<char>( ).c_str( ) );
+	printf( "a-b : %s\n", a.subtraction( b ).toJsonLikedString<char>( ).c_str( ) );
+	printf( "a*b : %s\n", a.multiplication( b ).toJsonLikedString<char>( ).c_str( ) );
 
-	a.fromDecimalString<char>( "255" );
-	for ( size_t i = 0; i < 256; i++ ) {
-
-		printf( "%s : %s\n",
-			CStdBitsetUnsignedStringConversion<char>::CreateSeparatedStringWithZeroPadded( a.toBinaryString( ), 8, 4 ).c_str( ),
-			a.toDecimalString( ).c_str( )
-		);
-
-		--a;
+	auto div_rem = a.divisionWithRemainder( b );
+	if ( div_rem.has_value( ) ) {
+		printf( "a/b : %s\n", div_rem->first.toJsonLikedString<char>( ).c_str( ) );
+		printf( "a%%b : %s\n", div_rem->second.toJsonLikedString<char>( ).c_str( ) );
 	}
+
+	auto x = a.division( b );
+	if ( x.has_value() )dump_bin( x.value() );
+	x = a.remainder( b );
+	if ( x.has_value() )dump_bin( x.value() );
 
 	return 0;
+}
+
+
+void uselevel_from_test_func( void ) {
+
+	CUnsignedBitNumber64 n64;
+	n64.fill( );
+
+	printf( "%I64u : %s\n\n", n64.toUInt64( ), n64.toJsonLikedString<char>( ).c_str( ) );
+
+
+	uint32_t  iv = 0x86214573;
+	CUnsignedBitNumber<32> v;
+
+	for ( size_t offset = 0; offset < 32; offset++ ) {
+		v.fromUInt32( iv, offset );
+		printf( "%u : ", iv << offset );
+		printf( "%s\n", v.toJsonLikedString<char>( ).c_str( ) );
+	}
+
+
+	printf( "-------------------------------\n" );
+
+	CUnsignedBitNumber<16> v16;
+	for ( size_t offset = 0; offset < 16; offset++ ) {
+		v16.fromUInt32( iv, offset );
+		printf( "%u : ", static_cast<uint16_t>( iv << offset ) );
+		printf( "%s\n", v16.toJsonLikedString<char>( ).c_str( ) );
+	}
+
+
 }
 
 
@@ -71,6 +110,9 @@ void func1( void ) {
 	printf( "%S\n", CStdBitsetUnsignedStringConversion<wchar_t>::ToHexadecimalString( b ).c_str( ) );
 
 	std::wstring w( { 'a'  , 'B' , 0 } );
+
+
+
 
 	printf( "%S\n", w.c_str( ) );
 }
