@@ -1,6 +1,8 @@
 /*
-以下にまとめた内容をベースにクラス実装化
+以下にまとめた内容をベースにクラス実装化 + 多数の追加独自実装あり
 https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
+
+開発環境：Visual Studio 2026
 */
 
 #pragma once
@@ -67,6 +69,10 @@ public:
 	template<size_t BitSize>  static StdBitset<BitSize> Decrement( StdBitsetConstRef<BitSize> input ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 
+
+		// このクラスは、1減算するのではなく、全ビットに1を加算する方法でデクリメントを実装している
+		// 全ビットに1を加算するということは、1の2の補数(-1) を加算することと同義となり、1減算を実装できる
+
 		StdBitset<BitSize>  ox( input );
 
 		bool A, X, Cn, Cb = false;
@@ -91,7 +97,7 @@ public:
 		std::bitset<BitSize>  ox( 0 );
 
 		bool a, b, x;
-		bool c = 0, Cb = input_carry;
+		bool c, Cb = input_carry;
 
 		for ( size_t i = 0; i < BitSize; i++ ) {
 			a = input_a[i];
@@ -114,7 +120,7 @@ public:
 		std::bitset<BitSize>  ox( 0 );
 
 		bool a, b, x;
-		bool c = 0, Cb = false;
+		bool c, Cb = false;
 
 		for ( size_t i = 0; i < BitSize; i++ ) {
 			a = input_a[i];
@@ -221,6 +227,10 @@ public:
 		for ( size_t i = BitSize-1; i > 0; i-- ) {
 			if ( input[i] ) return i + 1;
 		}
+
+		// ループが最後まで回ってもreturnされず、ここに来るケースは
+		// 最下位ビットの値が0(false)もしくは1(true)で、かつそれ以外のビットは全て0(false)の場合のみである
+		// 0 (false) は 1桁もないのではなく 0 という1桁の数値が有るものと見なす。
 		return 1;
 	}
 
@@ -234,8 +244,9 @@ public:
 		for ( size_t i = 0; ( i < BitSize ) && isStillEqual; i++ ) {
 			index = BitSize - 1 - i;
 			isLeftAbove = input_left[index] && ( !input_right[index] );
-			isStillEqual = !( input_left[index] ^ input_right[index] );
 			if ( isLeftAbove ) return CompareResult::LeftGreater;
+
+			isStillEqual = !( input_left[index] ^ input_right[index] );
 		}
 
 		return  ( isStillEqual ) ? CompareResult::Equal : CompareResult::RightGreater;
@@ -333,7 +344,7 @@ public:
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		StdBitset<BitSize> result;
 		if ( BitSize < 4 ) {
-			std::bitset<4> bs = FromDecimalString<4>( str );
+			std::bitset<4> bs = FromDecimalString<4>( str  , valid_separators);
 			for ( size_t i = 0; i < BitSize; i++ )  result[i] = bs[i];
 			return result;
 		} 
@@ -362,7 +373,7 @@ public:
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		if ( BitSize < 4 ) {
 			StdBitset<4> bs( bin.to_ulong( ) );
-			return  ToHexadecimalString( bs );
+			return  ToHexadecimalString( bs  ,upper_case);
 		}
 		String result_string;
 		StdBitset<BitSize> auxiliary( bin );
@@ -385,7 +396,7 @@ public:
 
 		StdBitset<BitSize> result;
 		if ( BitSize < 4 ) {
-			std::bitset<4> bs = FromHexadecimalString<4>( str );
+			std::bitset<4> bs = FromHexadecimalString<4>( str ,valid_separators);
 			for ( size_t i = 0; i < BitSize; i++ )  result[i] = bs[i];
 			return result;
 		}
@@ -487,8 +498,10 @@ public:
 
 
 
-	// rawは外部から変更されても、本クラスの動作に影響しないため、公開範囲をpublicとする
+	// rawは全ビットが符号ビット等の状態を示すビットがない純粋な数値データであり、
+	// 外部から変更されても、本クラスの動作に影響しないため、公開範囲はpublicで問題ない
 	StdBitset raw;
+
 
 	const StdBitset& rawRefConst( void ) const {
 		return raw;
@@ -498,16 +511,19 @@ public:
 
 	}
 
-	CUnsignedBitNumber( uint64_t i64value ) : raw( i64value ) {}
-	CUnsignedBitNumber(const StdBitset& value ) : raw( value ) {}
+	CUnsignedBitNumber( uint64_t i64value ) : raw( i64value ) {
+	
+	}
+	
+	CUnsignedBitNumber(const StdBitset& value ) : raw( value ) {
+	
+	}
 
 	template <size_t FromSize, typename FromCharType = DefaultCharType> explicit CUnsignedBitNumber( const  CUnsignedBitNumber<FromSize, FromCharType>& from , size_t self_offset_bit_number = 0, size_t from_offset_bit_number = 0 ) {
 		this->fromCast( from, self_offset_bit_number, from_offset_bit_number );
 	}
 
-	~CUnsignedBitNumber( ) {
-
-	}
+	~CUnsignedBitNumber( ) = default;
 
 
 
@@ -695,6 +711,7 @@ public:
 	}
 
 	bool rangeUnset( size_t start_index, size_t size ) {
+		if ( size == 0 )return true;
 		return rangeUnsetIndex( start_index, start_index + size - 1 );
 	}
 
@@ -861,21 +878,21 @@ public:
 
 
 
-	CUnsignedBitNumber additionWithCarry( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) const{
+	CUnsignedBitNumber additionWithCarryParam( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) const{
 		auto pre_result = CStdBitsetUnsignedOperation::Addition<BitSize>( this->raw, value.raw, input_carry, pLastCarry );
 		return CUnsignedBitNumber( pre_result );
 	}
 
 
-	CUnsignedBitNumber selfUpdateAdditionWithCarry( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) {
-		auto pre_result = additionWithCarry( value, input_carry, pLastCarry );
+	CUnsignedBitNumber selfUpdateAdditionWithCarryParam( const CUnsignedBitNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) {
+		auto pre_result = additionWithCarryParam( value, input_carry, pLastCarry );
 		this->raw = pre_result.raw;
 		return pre_result;
 	}
 
 
 	CUnsignedBitNumber addition( const CUnsignedBitNumber& value) const {
-		return additionWithCarry( value, false, nullptr );
+		return additionWithCarryParam( value, false, nullptr );
 	}
 
 
@@ -1103,5 +1120,3 @@ using CUnsignedBitNumber24W = CUnsignedBitNumberW<24>;
 using CUnsignedBitNumber32W = CUnsignedBitNumberW<32>;
 using CUnsignedBitNumber64W = CUnsignedBitNumberW<64>;
 using CUnsignedBitNumber128W = CUnsignedBitNumberW<128>;
-
-

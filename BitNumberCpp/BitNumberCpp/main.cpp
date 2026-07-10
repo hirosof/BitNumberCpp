@@ -41,7 +41,7 @@ int main( ) {
 
 	print_bitNumberWBS( "b2", b2 );
 
-
+	arithmeticTest( );
 
 	return 0;
 }
