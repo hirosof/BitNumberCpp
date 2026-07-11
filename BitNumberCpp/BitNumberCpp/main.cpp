@@ -3,7 +3,7 @@
 #include <locale>
 #include <vector>
 #include<random>
-#include "CUnsignedBitNumber.hpp"
+#include "../common/CUnsignedBitNumber.hpp"
 
 enum struct NumberType {
 	Binary = 0,
