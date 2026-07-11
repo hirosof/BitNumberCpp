@@ -110,14 +110,8 @@ template <size_t BitSize>  void arithmeticSampleRandom( void ) {
 
 }
 
-int main( ) {
 
-	// 日本語ロケールに設定
-	setlocale( LC_ALL, "Japanese" );
-
-	// UTF-8コードページに変更
-	SetConsoleOutputCP( CP_UTF8 );
-
+void arithmeticSampleMain( void ) {
 
 	printf( "### 8 bit\n\n" );
 	arithmeticSampleRandom<8>( );
@@ -143,7 +137,40 @@ int main( ) {
 	arithmeticSampleRandom<128>( );
 	arithmeticSampleRandom<128>( );
 
+}
 
+int main( ) {
+
+	// 日本語ロケールに設定
+	setlocale( LC_ALL, "Japanese" );
+
+	// UTF-8コードページに変更
+	SetConsoleOutputCP( CP_UTF8 );
+
+
+	CUnsignedBitNumber32  n1(100);
+	CUnsignedBitNumber64 n2(100);
+	
+
+	printf( "%u %u\n", (uint32_t) CStdBitsetUnsignedOperation::CompareExtend( n1.raw, n2.raw )  ,(uint32_t) n1.compareExtend(n2));
+
+	n1.fromUInt32( 50 );
+
+	printf( "%u %u\n", (uint32_t) CStdBitsetUnsignedOperation::CompareExtend( n1.raw, n2.raw ), (uint32_t) n1.compareExtend( n2 ) );
+
+
+	n2.fromUInt64( 25 );
+
+	printf( "%u %u\n", (uint32_t) CStdBitsetUnsignedOperation::CompareExtend( n1.raw, n2.raw ), (uint32_t) n1.compareExtend( n2 ) );
+
+	
+	CUnsignedBitNumber32 n1_f2( n2 );
+
+	if ( n1 != n1_f2 ) {
+
+	}
+
+	printf( "%u\n", n1.equalExtend(n2 ));
 	return 0;
 }
 

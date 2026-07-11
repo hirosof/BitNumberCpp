@@ -13,6 +13,7 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 #include <utility>
 #include <string>
 #include <stdexcept>
+#include <compare>
 
 class CStdBitsetUnsignedOperation {
 public:
@@ -251,6 +252,20 @@ public:
 
 		return  ( isStillEqual ) ? CompareResult::Equal : CompareResult::RightGreater;
 	}
+
+	template<size_t BitSizeL , size_t BitSizeR>  static  CompareResult CompareExtend( StdBitsetConstRef<BitSizeL> input_left, StdBitsetConstRef<BitSizeR> input_right ) {
+
+		if  constexpr ( BitSizeL == BitSizeR ) {
+			return Compare<BitSizeL>( input_left, input_right );
+		}else if  constexpr  ( BitSizeL >  BitSizeR ) {
+			return Compare<BitSizeL>( input_left, CastSize<BitSizeL>( input_right ) );
+		} 
+		return Compare<BitSizeR>( CastSize<BitSizeR>(input_left),  input_right  );
+
+	}
+
+
+
 
 	template<size_t BitSize>  static  StdBitset<BitSize> Max( StdBitsetConstRef<BitSize> input_left, StdBitsetConstRef<BitSize> input_right ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
@@ -989,6 +1004,14 @@ public:
 		return std::nullopt;
 	}
 
+	SelfOptional  selfUpdateRemainder( const CUnsignedBitNumber& value ) {
+		auto result = this->remainder( value );
+		if ( result.has_value( ) ) {
+			this->raw = result.value( ).raw;
+		}
+		return result;
+	}
+
 	CUnsignedBitNumber& operator%=( const CUnsignedBitNumber& rhs ) {
 
 		if ( rhs.raw.none( ) ) throw std::domain_error( "CUnsignedBitNumber：0除算が発生しました。" );
@@ -1013,13 +1036,7 @@ public:
 	/*
 		除算・剰余
 	*/
-	SelfOptional  selfUpdateRemainder( const CUnsignedBitNumber& value ) {
-		auto result = this->remainder( value );
-		if ( result.has_value( ) ) {
-			this->raw = result.value( ).raw;
-		}
-		return result;
-	}
+
 
 	SelfPairOptional  divisionWithRemainder( const CUnsignedBitNumber& value) const{
 		auto pre_result = CStdBitsetUnsignedOperation::DivisionWithRemainder<BitSize>( this->raw, value.raw );
@@ -1029,6 +1046,9 @@ public:
 		return std::nullopt;
 	}
 
+	/*
+		2進数として文字列化した際の表示文字列の長さを取得
+	*/
 	size_t getNumberOfBinaryDigitsForDisplay( void )const {
 		return CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( this->raw );
 	}
@@ -1053,23 +1073,69 @@ public:
 		switch ( cr ) {
 			case CStdBitsetUnsignedOperation::CompareResult::LeftGreater:
 				return CompareResult::SelfGreater;
-			case CStdBitsetUnsignedOperation::CompareResult::Equal:
-				return CompareResult::Equal;
 			case CStdBitsetUnsignedOperation::CompareResult::RightGreater:
 				return CompareResult::TargetGreater;
 		}
 
-		// ここには到達しないが、Visual Studio (Visual C++)における、 warning C4715 対策と、
-		// 予期しないバグに対応するため、例外を発行しておく。
-		throw std::domain_error( "CUnsignedBitNumber::compare：予定外の例外が発生しました。" );
+		return CompareResult::Equal;
 	}
 
 
+	template <size_t NewSize, typename CharType = DefaultCharType> CompareResult compareExtend( const  CUnsignedBitNumber<NewSize, CharType>& target ) const {
+
+		CStdBitsetUnsignedOperation::CompareResult  cr = CStdBitsetUnsignedOperation::CompareExtend( this->raw, target.raw );
+
+		switch ( cr ) {
+			case CStdBitsetUnsignedOperation::CompareResult::LeftGreater:
+				return CompareResult::SelfGreater;
+			case CStdBitsetUnsignedOperation::CompareResult::RightGreater:
+				return CompareResult::TargetGreater;
+		}
+
+		return CompareResult::Equal;
+	}
+
+
+
+
+	bool  equal( const  CUnsignedBitNumber& target ) const {
+		return compare( target ) == CompareResult::Equal;
+	}
+
+	template <size_t NewSize, typename CharType = DefaultCharType> bool equalExtend( const  CUnsignedBitNumber<NewSize, CharType>& target ) const {
+		return compareExtend( target ) == CompareResult::Equal;
+	}
+
+	std::strong_ordering operator <=> (const  CUnsignedBitNumber& rhs ) const{
+	
+		CompareResult cr = this->compare( rhs );
+
+		switch ( cr ) {
+			case CompareResult::SelfGreater:
+				return std::strong_ordering::greater;
+			case CompareResult::TargetGreater:
+				return std::strong_ordering::less;		
+		}
+
+		return std::strong_ordering::equal;
+	}
+
+	bool  operator==( const  CUnsignedBitNumber& rhs ) const {
+		return this->equal( rhs );
+	}
+
+
+	/*
+		大きい方のCUnsignedBitNumberを返すスタティック関数
+	*/
 	static  CUnsignedBitNumber  Max( const CUnsignedBitNumber& number1, const CUnsignedBitNumber& number2 ) {
 		auto value = CStdBitsetUnsignedOperation::Max( number1.raw, number2.raw );
 		return  CUnsignedBitNumber( value );
 	}
 
+	/*
+		小さい方のCUnsignedBitNumberを返すスタティック関数
+	*/
 	static  CUnsignedBitNumber  Min( const CUnsignedBitNumber& number1, const CUnsignedBitNumber& number2 ) {
 		auto value = CStdBitsetUnsignedOperation::Min( number1.raw, number2.raw );
 		return  CUnsignedBitNumber( value );
