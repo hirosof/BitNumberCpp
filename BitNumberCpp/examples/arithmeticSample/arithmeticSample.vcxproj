@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>18.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{56a8eb60-162f-40f4-8483-f283769b8f5d}</ProjectGuid>
-    <RootNamespace>BitNumberCpp</RootNamespace>
+    <ProjectGuid>{917fc372-50e1-4e94-a3e6-041a779209b6}</ProjectGuid>
+    <RootNamespace>arithmeticSample</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

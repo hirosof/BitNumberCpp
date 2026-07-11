@@ -11,9 +11,15 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 #include <optional>
 #include <algorithm>
 #include <utility>
-
+#include <random>
 
 class CStdBitsetUnsignedOperation {
+private: 
+
+	inline static  std::mt19937_64   mtRandom;
+	inline static  bool   mtRandomInitialized = false;
+
+
 public:
 	template<size_t BitSize> using StdBitset = std::bitset<BitSize>;
 	template<size_t BitSize> using StdBitsetPointer = std::bitset<BitSize>*;
@@ -275,6 +281,48 @@ public:
 
 		return ( Compare( input_left, input_right ) != CompareResult::LeftGreater ) ? input_left : input_right;
 	}
+
+
+	template<size_t BitSize>  static  StdBitset<BitSize> Random( size_t fill_bit_size = BitSize ) {
+
+		if ( !mtRandomInitialized ) {
+			mtRandom = std::mt19937_64( std::random_device {}( ) );
+			mtRandomInitialized = true;
+		}
+
+		StdBitset<BitSize>result;
+
+		size_t genBitSize = std::min( BitSize, fill_bit_size );
+		size_t numberOfBlocks = genBitSize / 64;
+		size_t numberOfRestBits = genBitSize % 64;
+
+		if ( numberOfRestBits > 0 ) numberOfBlocks++;
+
+		size_t current_gen_bits;
+		uint64_t current_random_value;
+
+		for ( size_t i = 0; i < numberOfBlocks; i++ ) {
+
+			current_gen_bits = 64;
+
+			if ( ( ( i + 1 ) == numberOfBlocks ) && ( numberOfRestBits > 0 ) ) {
+				current_gen_bits = numberOfRestBits;
+			}
+
+			result <<= current_gen_bits;
+
+			current_random_value = mtRandom( );
+
+			for ( size_t bit = 0; bit < current_gen_bits; bit++ ) {
+				result[bit] = current_random_value & 1;
+				current_random_value >>= 1;
+			}
+
+		}
+
+		return result;
+	}
+
 
 };
 

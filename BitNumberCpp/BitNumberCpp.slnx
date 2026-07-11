@@ -3,5 +3,14 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/common/">
+    <File Path="common/CStdBitsetUnsignedOperation.hpp" />
+    <File Path="common/CStdBitsetUnsignedStringConversion.hpp" />
+    <File Path="common/CUnsignedBitNumber.hpp" />
+  </Folder>
+  <Folder Name="/Examples/">
+    <Project Path="examples/arithmeticSample/arithmeticSample.vcxproj" Id="917fc372-50e1-4e94-a3e6-041a779209b6" />
+  </Folder>
+  <Folder Name="/Examples/common/" />
   <Project Path="BitNumberCpp/BitNumberCpp.vcxproj" Id="56a8eb60-162f-40f4-8483-f283769b8f5d" />
 </Solution>

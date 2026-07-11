@@ -21,7 +21,7 @@ template<size_t BitSize , typename DefaultCharType = char> class CUnsignedBitNum
 public:
 	static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 	
-	using StdBitset = std::bitset<BitSize>;
+	using StdBitset = CStdBitsetUnsignedOperation::StdBitset<BitSize>;
 	using StdBoolOptional = std::optional<bool>;
 	using StdSizeTPair = std::pair<size_t, size_t>;
 
@@ -29,7 +29,12 @@ public:
 	using SelfPair = std::pair<CUnsignedBitNumber, CUnsignedBitNumber>;
 	using SelfPairOptional = std::optional<SelfPair>;
 
-
+	enum struct OffsetBasis {
+		Least = 0,		// 最下位ビット基準
+		Most,				// 最上位ビット基準
+		LSB = Least,	// 最下位ビット基準 (Leastの別名)
+		MSB = Most		// 最上位ビット基準 (Mostの別名)
+	};
 
 
 	// rawは全ビットが符号ビット等の状態を示すビットがない純粋な数値データであり、
@@ -745,32 +750,99 @@ public:
 		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromHexadecimalString< BitSize>( str, valid_separators );
 	}
 
+	template<typename CharT = DefaultCharType> static  CUnsignedBitNumber  CreateFromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		CUnsignedBitNumber ubn;
+		ubn.fromBinaryString<CharT>( str, valid_separators );
+		return ubn;
+	}
+
+	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		CUnsignedBitNumber ubn;
+		ubn.fromDecimalString<CharT>( str, valid_separators );
+		return ubn;
+	}
+
+	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		CUnsignedBitNumber ubn;
+		ubn.fromHexadecimalString<CharT>( str, valid_separators );
+		return ubn;
+	}
 
 	/*
-		ヘルパークラス
+		ランダム生成
 	*/
-	template<typename CharT = DefaultCharType> class FromHelpers {
-	public:
-		static CUnsignedBitNumber  FromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-			CUnsignedBitNumber ubn;
-			ubn.fromBinaryString<CharT>( str, valid_separators );
-			return ubn;
+
+	void selfUpdateRandom( size_t offset = 0 , size_t fill_bit_size = BitSize , bool partial = false ) {
+
+		if ( fill_bit_size == 0 )return;
+
+		if ( offset >= BitSize ) {
+			if ( !partial ) {
+				clear( );
+			}
+			return;
 		}
 
-		static CUnsignedBitNumber  FromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-			CUnsignedBitNumber ubn;
-			ubn.fromDecimalString<CharT>( str, valid_separators );
-			return ubn;
+		StdBitset  sb = CStdBitsetUnsignedOperation::Random<BitSize>( fill_bit_size );
+
+		sb <<= offset;
+
+		if ( !partial ) {
+			this->raw = sb;	
+		} else {
+			auto setting_range = ClipRangeIndex( offset, offset + fill_bit_size - 1 );
+			for ( size_t i = setting_range.first; i <= setting_range.second ; i++ ) {
+				this->raw[i] = sb[i];
+			}
 		}
 
-		static CUnsignedBitNumber  FromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-			CUnsignedBitNumber ubn;
-			ubn.fromHexadecimalString<CharT>( str, valid_separators );
-			return ubn;
+	}
+
+
+	void selfUpdateRandomExtend( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least,  bool partial = false ) {
+
+		if ( offset_basis == OffsetBasis::Least ) {
+			selfUpdateRandom( offset, fill_bit_size, partial );
+			return;
 		}
 
-	};
+		// LSBベースの位置に変換
+		size_t real_offset = offset + fill_bit_size - 1;
+		size_t least_base_offset; 
+		size_t under_size = 0;
+		if ( real_offset < BitSize ) {
+			least_base_offset = BitSize - 1 - real_offset;
+		} else {
+			least_base_offset = 0;
+			under_size = real_offset - BitSize + 1;
+		}
 
+		// アンダーフローしたサイズを考慮してフィルサイズの再設定を行う
+		size_t new_fill_size;
+		if ( under_size == 0 ) {
+			new_fill_size = fill_bit_size;
+		} else {
+			if ( under_size > fill_bit_size ) {
+				new_fill_size = 0;
+			} else {
+				new_fill_size = fill_bit_size - under_size;
+			}
+		}
+
+		selfUpdateRandom( least_base_offset, new_fill_size, partial );
+	}
+
+
+	static CUnsignedBitNumber Random( size_t offset = 0,  size_t fill_bit_size = BitSize ) {
+		CUnsignedBitNumber num;
+		num.selfUpdateRandom(offset , fill_bit_size );
+		return num;
+	}
+	static CUnsignedBitNumber RandomExtend( size_t offset = 0,  size_t fill_bit_size = BitSize , OffsetBasis offset_basis = OffsetBasis::Least ) {
+		CUnsignedBitNumber num;
+		num.selfUpdateRandomExtend(offset , fill_bit_size  , offset_basis);
+		return num;
+	}
 };
 
 template <size_t BitSize> using CUnsignedBitNumberA = CUnsignedBitNumber<BitSize, char>;

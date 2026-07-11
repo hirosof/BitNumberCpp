@@ -147,30 +147,14 @@ int main( ) {
 	// UTF-8コードページに変更
 	SetConsoleOutputCP( CP_UTF8 );
 
+	CUnsignedBitNumber16 n;
 
-	CUnsignedBitNumber32  n1(100);
-	CUnsignedBitNumber64 n2(100);
-	
+	for ( size_t i = 0; i < 26; i++ ) {
 
-	printf( "%u %u\n", (uint32_t) CStdBitsetUnsignedOperation::CompareExtend( n1.raw, n2.raw )  ,(uint32_t) n1.compareExtend(n2));
-
-	n1.fromUInt32( 50 );
-
-	printf( "%u %u\n", (uint32_t) CStdBitsetUnsignedOperation::CompareExtend( n1.raw, n2.raw ), (uint32_t) n1.compareExtend( n2 ) );
-
-
-	n2.fromUInt64( 25 );
-
-	printf( "%u %u\n", (uint32_t) CStdBitsetUnsignedOperation::CompareExtend( n1.raw, n2.raw ), (uint32_t) n1.compareExtend( n2 ) );
-
-	
-	CUnsignedBitNumber32 n1_f2( n2 );
-
-	if ( n1 != n1_f2 ) {
-
+		printf( "%s\n",CUnsignedBitNumber128::RandomExtend(0 , 16 , 
+			CUnsignedBitNumber128::OffsetBasis::Most ).toHexadecimalString<char>( ).c_str( ) );
 	}
 
-	printf( "%u\n", n1.equalExtend(n2 ));
 	return 0;
 }
 
