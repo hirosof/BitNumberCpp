@@ -14,12 +14,6 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 #include <random>
 
 class CStdBitsetUnsignedOperation {
-private: 
-
-	inline static  std::mt19937_64   mtRandom;
-	inline static  bool   mtRandomInitialized = false;
-
-
 public:
 	template<size_t BitSize> using StdBitset = std::bitset<BitSize>;
 	template<size_t BitSize> using StdBitsetPointer = std::bitset<BitSize>*;
@@ -285,10 +279,7 @@ public:
 
 	template<size_t BitSize>  static  StdBitset<BitSize> Random( size_t fill_bit_size = BitSize ) {
 
-		if ( !mtRandomInitialized ) {
-			mtRandom = std::mt19937_64( std::random_device {}( ) );
-			mtRandomInitialized = true;
-		}
+		static  std::mt19937_64   mtRandom( std::random_device {}( ) );
 
 		StdBitset<BitSize>result;
 

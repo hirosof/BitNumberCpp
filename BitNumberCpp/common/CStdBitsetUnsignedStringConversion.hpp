@@ -11,7 +11,8 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 
 #include <cstdint>
 #include <string>
-
+#include <map>
+#include <vector>
 #include "CStdBitsetUnsignedOperation.hpp"
 
 template <typename CharT> class CStdBitsetUnsignedStringConversion {
@@ -19,11 +20,44 @@ public:
 	using String = std::basic_string<CharT>;
 
 	template<size_t BitSize> using StdBitset = CStdBitsetUnsignedOperation::StdBitset<BitSize>;
+	template<size_t BitSize> using OptionalStdBitset = CStdBitsetUnsignedOperation::OptionalStdBitset<BitSize>;
 	template<size_t BitSize> using StdBitsetConstRef = CStdBitsetUnsignedOperation::StdBitsetConstRef<BitSize>;
 	template <size_t BitSize> using OptionalStdBitsetPair = CStdBitsetUnsignedOperation::OptionalStdBitsetPair<BitSize>;
 
 
 	inline static const String DEFAULT_VALID_SEPARATORS = String( { ' ', ',' } );
+
+	// From系の関数で無効文字検出時の動作モード
+	enum struct OperationForInvalidCharDetected {
+
+		// 部分パース(成功している部分までの値)の結果を返す
+		// 例：10進数文字列として "1234X5678"が指定された場合 → 1234 を表す値が返る
+		PartialReturn = 0,
+
+		// 0を表す値を返す
+		ZeroValueReturn,
+
+		// '0' が指定したものと解釈し、処理を続行する
+		// 例：10進数文字列として "1234X5678"が指定された場合 → 123405678 を表す値が返る
+		AssumeZeroContinue,
+
+		// その値を無視して処理を続行する
+		// 例：10進数文字列として "1234X5678"が指定された場合 → 12345678 を表す値が返る
+		SkipContinue
+	};
+
+	using InvalidCharMapType = std::map<CharT, std::vector<size_t>>;
+
+	template<size_t BitSize>	 class ParseResult {
+	public:
+		StdBitset<BitSize>  value;
+		size_t countOfInvalidChars;
+		InvalidCharMapType invalidCharMap;
+
+		ParseResult( ) : value( 0 ), countOfInvalidChars( 0 ), invalidCharMap(){
+		}
+	};
+
 
 	template<size_t BitSize>	static String ToBinaryString( StdBitsetConstRef<BitSize> bin ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
@@ -35,32 +69,105 @@ public:
 		return result_string;
 	}
 
-	template<size_t BitSize>	static StdBitset<BitSize> FromBinaryString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+	template<size_t BitSize>	static ParseResult<BitSize> FromBinaryStringPriorityLSBStrict( const String& str, const OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 
-		StdBitset<BitSize> result;
+		ParseResult<BitSize> result;
 		size_t bit_pos = 0;
 		CharT c;
 
 		for ( auto rev_it = str.rbegin( ); ( rev_it != str.rend( ) ) && ( bit_pos < BitSize ); rev_it++ ) {
 			c = *rev_it;
 			if ( c == '0' ) {
-				result[bit_pos] = false;
+				result.value[bit_pos] = false;
 				bit_pos++;
 			} else if ( c == '1' ) {
-				result[bit_pos] = true;
+				result.value[bit_pos] = true;
 				bit_pos++;
 			} else  if ( valid_separators.find( c ) != String::npos ) {
 				continue;
 			} else {
-				break;
+
+				result.countOfInvalidChars++;
+
+				result.invalidCharMap[c].push_back( str.length( ) - std::distance( str.rbegin( ), rev_it ) - 1 );
+
+				switch ( operation_invalid_char_detected ) {
+					case OperationForInvalidCharDetected::PartialReturn:
+						return result;
+					case OperationForInvalidCharDetected::ZeroValueReturn:
+						result.value = StdBitset<BitSize>( 0 );
+						return result;
+					case OperationForInvalidCharDetected::AssumeZeroContinue:
+						result.value[bit_pos] = false;
+						bit_pos++;
+						break;
+					case OperationForInvalidCharDetected::SkipContinue:
+						break;
+				}
 			}
 		}
-
 		return result;
 	}
 
+	template<size_t BitSize>	static ParseResult<BitSize> FromBinaryStringStrict( const String& str, const OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 
+		ParseResult<BitSize> result;
+		size_t current_bit_size = 0;
+		CharT c;
+
+		for ( auto it = str.begin( ); ( it != str.end( ) ) && ( current_bit_size < BitSize ); it++ ) {
+			c = *it;
+			if ( c == '0' ) {
+				result.value <<= 1;
+				result.value[0] = false;
+				current_bit_size++;
+			} else if ( c == '1' ) {
+				result.value <<= 1;
+				result.value[0] = true;
+				current_bit_size++;
+			} else  if ( valid_separators.find( c ) != String::npos ) {
+				continue;
+			} else {
+
+				result.countOfInvalidChars++;
+
+				result.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
+
+				switch ( operation_invalid_char_detected ) {
+					case OperationForInvalidCharDetected::PartialReturn:
+						return result;
+					case OperationForInvalidCharDetected::ZeroValueReturn:
+						result.value = StdBitset<BitSize>( 0 );
+						return result;
+					case OperationForInvalidCharDetected::AssumeZeroContinue:
+						result.value <<= 1;
+						result.value[0] = false;
+						current_bit_size++;
+						break;
+					case OperationForInvalidCharDetected::SkipContinue:
+						break;
+				}
+			}
+		}
+		return result;
+	}
+
+	template<size_t BitSize>	static StdBitset<BitSize> FromBinaryStringPriorityLSB( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> pr = FromBinaryStringPriorityLSBStrict<BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+		return pr.value;
+	}
+
+	template<size_t BitSize>	static StdBitset<BitSize> FromBinaryString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> pr = FromBinaryStringStrict<BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+		return pr.value;
+	}
+
+
+	
 	template<size_t BitSize>	static String ToDecimalString( StdBitsetConstRef<BitSize> bin ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		if ( BitSize < 4 ) {

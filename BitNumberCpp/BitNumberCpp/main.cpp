@@ -147,13 +147,37 @@ int main( ) {
 	// UTF-8コードページに変更
 	SetConsoleOutputCP( CP_UTF8 );
 
-	CUnsignedBitNumber16 n;
+	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
-	for ( size_t i = 0; i < 26; i++ ) {
+	auto a  = Conv::FromBinaryStringStrict<16>( "0110 X 1000 Y 0000 0001", Conv::OperationForInvalidCharDetected::PartialReturn);
 
-		printf( "%s\n",CUnsignedBitNumber128::RandomExtend(0 , 16 , 
-			CUnsignedBitNumber128::OffsetBasis::Most ).toHexadecimalString<char>( ).c_str( ) );
+
+	CUnsignedBitNumber16 b;
+
+	b.fromBinaryString<char>( "000" );
+
+
+	printf( "ic = %zu\n", a.countOfInvalidChars );
+
+	for ( auto item : a.invalidCharMap ) {
+
+		printf( "\t%c : ", item.first );
+
+		for ( auto vi : item.second ) {
+			printf( "%zu ", vi );
+		}
+
+		printf( "\n" );
 	}
+	
+		printf( "\n\n\n%s\n", CUnsignedBitNumber16( a.value ).toJsonLikedString( ).c_str( ) );
+
+
+	CUnsignedBitNumber16 n16;
+
+	n16.raw = Conv::FromBinaryString<16>( "0110 X 1000 Y 0000 0001" );
+
+	printf( "\n%s\n", n16.toJsonLikedString( ).c_str( ) );
 
 	return 0;
 }
