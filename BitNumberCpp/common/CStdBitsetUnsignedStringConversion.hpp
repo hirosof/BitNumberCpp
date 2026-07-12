@@ -48,15 +48,36 @@ public:
 
 	using InvalidCharMapType = std::map<CharT, std::vector<size_t>>;
 
-	template<size_t BitSize>	 class ParseResult {
+
+	class ProcessStringLengthInfo {
 	public:
-		StdBitset<BitSize>  value;
+		size_t specified;		//指定された文字列の総文字数
+		size_t processed;		// 処理した文字数
+
+		ProcessStringLengthInfo( ) : specified( 0 ), processed( 0 ) {}
+	};
+
+	class ParseProcessedInfo {
+	public:
 		size_t countOfInvalidChars;
 		InvalidCharMapType invalidCharMap;
 
-		ParseResult( ) : value( 0 ), countOfInvalidChars( 0 ), invalidCharMap(){
-		}
+		ProcessStringLengthInfo processLength;
+
+		ParseProcessedInfo( ) : countOfInvalidChars( 0 ), invalidCharMap( ), processLength( ) {}
 	};
+
+
+
+	template<size_t BitSize>	 class ParseResult {
+	public:
+		StdBitset<BitSize>  value;
+
+		ParseProcessedInfo info;
+
+		ParseResult( ) : value( 0 ), info() {}
+	};
+
 
 
 	template<size_t BitSize>	static String ToBinaryString( StdBitsetConstRef<BitSize> bin ) {
@@ -76,8 +97,14 @@ public:
 		size_t bit_pos = 0;
 		CharT c;
 
+		result.info.processLength.processed = 0;
+		result.info.processLength.specified = str.length();
+
 		for ( auto rev_it = str.rbegin( ); ( rev_it != str.rend( ) ) && ( bit_pos < BitSize ); rev_it++ ) {
 			c = *rev_it;
+
+			result.info.processLength.processed++;
+
 			if ( c == '0' ) {
 				result.value[bit_pos] = false;
 				bit_pos++;
@@ -88,9 +115,9 @@ public:
 				continue;
 			} else {
 
-				result.countOfInvalidChars++;
+				result.info.countOfInvalidChars++;
 
-				result.invalidCharMap[c].push_back( str.length( ) - std::distance( str.rbegin( ), rev_it ) - 1 );
+				result.info.invalidCharMap[c].push_back( str.length( ) - std::distance( str.rbegin( ), rev_it ) - 1 );
 
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
@@ -117,8 +144,14 @@ public:
 		size_t current_bit_size = 0;
 		CharT c;
 
+		result.info.processLength.processed = 0;
+		result.info.processLength.specified = str.length( );
+
 		for ( auto it = str.begin( ); ( it != str.end( ) ) && ( current_bit_size < BitSize ); it++ ) {
 			c = *it;
+			
+			result.info.processLength.processed++;
+
 			if ( c == '0' ) {
 				if ( !result.value.none( ) ) {
 					result.value <<= 1;
@@ -133,9 +166,9 @@ public:
 				continue;
 			} else {
 
-				result.countOfInvalidChars++;
+				result.info.countOfInvalidChars++;
 
-				result.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
+				result.info.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
 
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
@@ -210,8 +243,8 @@ public:
 
 		if ( BitSize < 4 ) {
 			ParseResult<4> pr4 = FromDecimalStringStrict<4>( str, operation_invalid_char_detected, valid_separators );
-			result.countOfInvalidChars = pr4.countOfInvalidChars;
-			result.invalidCharMap = std::move( pr4.invalidCharMap );
+			result.info.countOfInvalidChars = pr4.info.countOfInvalidChars;
+			result.info.invalidCharMap = std::move( pr4.info.invalidCharMap );
 			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
 			return result;
 		}
@@ -221,8 +254,14 @@ public:
 		StdBitset<BitSize> current_digit_bitset( 0 );
 		uint8_t current_digit_value;
 
+		result.info.processLength.processed = 0;
+		result.info.processLength.specified = str.length( );
+
+
 		for ( auto it = str.begin( ); it != str.end( ) ; it++ ) {
 			c = *it;
+
+			result.info.processLength.processed++;
 
 			if ( c >= '0' && c <= '9' ) {
 				current_digit_value = c - '0';
@@ -234,9 +273,9 @@ public:
 				result.value = CStdBitsetUnsignedOperation::Addition( result.value, current_digit_bitset );
 			} else if ( valid_separators.find( c ) == String::npos ) {
 
-				result.countOfInvalidChars++;
+				result.info.countOfInvalidChars++;
 
-				result.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
+				result.info.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
 
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
@@ -291,8 +330,8 @@ public:
 
 		if ( BitSize < 4 ) {
 			ParseResult<4> pr4 = FromHexadecimalStringStrict<4>( str, operation_invalid_char_detected, valid_separators );
-			result.countOfInvalidChars = pr4.countOfInvalidChars;
-			result.invalidCharMap = std::move( pr4.invalidCharMap );
+			result.info.countOfInvalidChars = pr4.info.countOfInvalidChars;
+			result.info.invalidCharMap = std::move( pr4.info.invalidCharMap );
 			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
 			return result;
 		}
@@ -309,9 +348,15 @@ public:
 
 		size_t currentBlockBits = 4;
 
+		result.info.processLength.processed = 0;
+		result.info.processLength.specified = slen;
+
+
 		for ( size_t i = 0 , blocks = 0 ;  (i < slen) && (blocks < maxBlocks) ; i++ ) {
 
 			c = str[i];
+	
+			result.info.processLength.processed++;
 
 			if ( c >= '0' && c <= '9' ) {
 				current_digit_value = c - '0';
@@ -322,8 +367,8 @@ public:
 			} else  if ( valid_separators.find( c ) != String::npos ) {
 				continue;
 			} else {
-				result.countOfInvalidChars++;
-				result.invalidCharMap[c].push_back( i );
+				result.info.countOfInvalidChars++;
+				result.info.invalidCharMap[c].push_back( i );
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
 						return result;
@@ -387,8 +432,8 @@ public:
 
 		if ( BitSize < 4 ) {
 			ParseResult<4> pr4 = FromHexadecimalStringPriorityLSBStrict<4>( str, operation_invalid_char_detected, valid_separators );
-			result.countOfInvalidChars = pr4.countOfInvalidChars;
-			result.invalidCharMap = std::move( pr4.invalidCharMap );
+			result.info.countOfInvalidChars = pr4.info.countOfInvalidChars;
+			result.info.invalidCharMap = std::move( pr4.info.invalidCharMap );
 			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
 			return result;
 		}
@@ -406,10 +451,16 @@ public:
 		size_t currentBlockBits = 4;
 		size_t realIndex;
 
+		result.info.processLength.processed = 0;
+		result.info.processLength.specified = slen;
+
+
 		for ( size_t i = 0, blocks = 0; ( i < slen ) && ( blocks < maxBlocks ); i++ ) {
 
 			realIndex = slen - 1 - i;
 			c = str[realIndex];
+
+			result.info.processLength.processed++;
 
 			if ( c >= '0' && c <= '9' ) {
 				current_digit_value = c - '0';
@@ -420,8 +471,8 @@ public:
 			} else  if ( valid_separators.find( c ) != String::npos ) {
 				continue;
 			} else {
-				result.countOfInvalidChars++;
-				result.invalidCharMap[c].push_back( realIndex );
+				result.info.countOfInvalidChars++;
+				result.info.invalidCharMap[c].push_back( realIndex );
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
 						return result;

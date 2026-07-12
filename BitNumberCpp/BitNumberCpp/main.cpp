@@ -149,11 +149,22 @@ int main( ) {
 
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
-	auto a  = Conv::FromHexadecimalStringStrict<6>( "6F", Conv::OperationForInvalidCharDetected::PartialReturn);
 
-	printf( "ic = %zu\n", a.countOfInvalidChars );
+	Conv::FromBinaryString<16>( "0000" );
+	Conv::FromBinaryStringPriorityLSB<16>( "0000" );
 
-	for ( auto item : a.invalidCharMap ) {
+	Conv::FromDecimalString<16>( "0000" );
+	Conv::FromHexadecimalString<16>( "0000" );
+
+	Conv::FromHexadecimalStringPriorityLSB<16>( "0000" );
+
+	auto a  = Conv::FromBinaryStringPriorityLSBStrict<6>( "16F00", Conv::OperationForInvalidCharDetected::PartialReturn);
+
+
+	printf( "processed = %zu , spec = %zu\n", a.info.processLength.processed , a.info.processLength.specified );
+
+	printf( "ic = %zu\n", a.info.countOfInvalidChars );
+	for ( auto item : a.info.invalidCharMap ) {
 
 		printf( "\t%c : ", item.first );
 
