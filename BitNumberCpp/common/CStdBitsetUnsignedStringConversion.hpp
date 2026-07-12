@@ -120,9 +120,11 @@ public:
 		for ( auto it = str.begin( ); ( it != str.end( ) ) && ( current_bit_size < BitSize ); it++ ) {
 			c = *it;
 			if ( c == '0' ) {
-				result.value <<= 1;
-				result.value[0] = false;
-				current_bit_size++;
+				if ( !result.value.none( ) ) {
+					result.value <<= 1;
+					result.value[0] = false;
+					current_bit_size++;
+				}
 			} else if ( c == '1' ) {
 				result.value <<= 1;
 				result.value[0] = true;
@@ -142,9 +144,11 @@ public:
 						result.value = StdBitset<BitSize>( 0 );
 						return result;
 					case OperationForInvalidCharDetected::AssumeZeroContinue:
-						result.value <<= 1;
-						result.value[0] = false;
-						current_bit_size++;
+						if ( !result.value.none( ) ) {
+							result.value <<= 1;
+							result.value[0] = false;
+							current_bit_size++;
+						}
 						break;
 					case OperationForInvalidCharDetected::SkipContinue:
 						break;
@@ -334,8 +338,30 @@ public:
 				}
 			}
 
+			// 1 (true) になっているビットが一つもなく、現在の値が0の場合はスキップで問題ない
+			if ( result.value.none( ) && ( current_digit_value == 0 ) ) continue;
+
 			blocks++;
-			if ( (blocks == maxBlocks) &&(finalRestBits !=0) ) currentBlockBits = finalRestBits;
+			
+			if ( ( blocks == maxBlocks ) && ( finalRestBits != 0 ) ) {
+
+				/*
+					実測の上位空きビット数を取得するブロック
+				*/
+
+				// 上位4ビットが0(false) と仮定しておく
+				size_t emptyMSBBit = 4;
+
+				//最大で4ビットの空きがあればいいので上位4ビットの走査で十分である
+				for ( size_t j = 0; j < 4; j++ ) {
+					if ( result.value[BitSize - 1 - j] ) {
+						emptyMSBBit = j;
+						break;
+					}
+				}
+
+				currentBlockBits = emptyMSBBit;
+			}
 
 			result.value <<= currentBlockBits;
 
