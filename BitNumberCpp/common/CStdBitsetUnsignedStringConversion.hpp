@@ -194,7 +194,7 @@ public:
 		return result_string;
 	}
 
-	template <size_t BitSize> static  StdBitset<BitSize>  FromDecimalString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+	template <size_t BitSize> static  StdBitset<BitSize>  FromDecimalStringLegacy( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		StdBitset<BitSize> result;
 		if ( BitSize < 4 ) {
@@ -222,6 +222,65 @@ public:
 	}
 
 
+	template <size_t BitSize> static  StdBitset<BitSize>  FromDecimalString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> parsed = FromDecimalStringStrict< BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+		return parsed.value;
+	}
+
+	template <size_t BitSize> static  ParseResult<BitSize>  FromDecimalStringStrict( const String& str, const OperationForInvalidCharDetected operation_invalid_char_detected ,  const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> result;
+
+		if ( BitSize < 4 ) {
+			ParseResult<4> pr4 = FromDecimalStringStrict<4>( str, operation_invalid_char_detected, valid_separators );
+			result.countOfInvalidChars = pr4.countOfInvalidChars;
+			result.invalidCharMap = std::move( pr4.invalidCharMap );
+			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
+			return result;
+		}
+
+		CharT c;
+		const StdBitset<BitSize>  bit_of_ten( 10 );
+		StdBitset<BitSize> current_digit_bitset( 0 );
+		uint8_t current_digit_value;
+
+		for ( auto it = str.begin( ); it != str.end( ) ; it++ ) {
+			c = *it;
+
+			if ( c >= '0' && c <= '9' ) {
+				current_digit_value = c - '0';
+				current_digit_bitset[0] = current_digit_value & 1;
+				current_digit_bitset[1] = ( current_digit_value >> 1 ) & 1;
+				current_digit_bitset[2] = ( current_digit_value >> 2 ) & 1;
+				current_digit_bitset[3] = ( current_digit_value >> 3 ) & 1;
+				result.value = CStdBitsetUnsignedOperation::Multiplication( result.value, bit_of_ten );
+				result.value = CStdBitsetUnsignedOperation::Addition( result.value, current_digit_bitset );
+			} else if ( valid_separators.find( c ) == String::npos ) {
+
+				result.countOfInvalidChars++;
+
+				result.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
+
+				switch ( operation_invalid_char_detected ) {
+					case OperationForInvalidCharDetected::PartialReturn:
+						return result;
+					case OperationForInvalidCharDetected::ZeroValueReturn:
+						result.value = StdBitset<BitSize>( 0 );
+						return result;
+					case OperationForInvalidCharDetected::AssumeZeroContinue:
+						result.value = CStdBitsetUnsignedOperation::Multiplication( result.value, bit_of_ten );
+						break;
+					case OperationForInvalidCharDetected::SkipContinue:
+						break;
+				}
+			}
+
+		}
+
+		return result;
+	}
+
 
 	template<size_t BitSize>	static String ToHexadecimalString( StdBitsetConstRef<BitSize> bin, bool upper_case = false ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
@@ -244,8 +303,8 @@ public:
 		return result_string;
 	}
 
-
-	template <size_t BitSize> static  StdBitset<BitSize>  FromHexadecimalString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+	// 後記のFromHexadecimalString系関数の実装に失敗した時のため旧実装はFromHexadecimalStringLegacyは一旦残しておく
+	template <size_t BitSize> static  StdBitset<BitSize>  FromHexadecimalStringLegacy( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 
 		StdBitset<BitSize> result;
@@ -276,6 +335,154 @@ public:
 		}
 		return result;
 	}
+
+	template <size_t BitSize> static  StdBitset<BitSize>  FromHexadecimalString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> parsed = FromHexadecimalStringStrict< BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+		return parsed.value;
+	}
+	template <size_t BitSize> static  ParseResult<BitSize>  FromHexadecimalStringStrict( const String& str, const OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> result;
+
+		if ( BitSize < 4 ) {
+			ParseResult<4> pr4 = FromHexadecimalStringStrict<4>( str, operation_invalid_char_detected, valid_separators );
+			result.countOfInvalidChars = pr4.countOfInvalidChars;
+			result.invalidCharMap = std::move( pr4.invalidCharMap );
+			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
+			return result;
+		}
+
+		uint8_t current_digit_value = 0;		
+		size_t slen = str.length( );
+
+		size_t maxBlocks = BitSize / 4;
+		const size_t finalRestBits = BitSize % 4;
+
+		if ( finalRestBits != 0 ) maxBlocks++;
+
+		CharT c;
+
+		size_t currentBlockBits = 4;
+
+		for ( size_t i = 0 , blocks = 0 ;  (i < slen) && (blocks < maxBlocks) ; i++ ) {
+
+			c = str[i];
+
+			if ( c >= '0' && c <= '9' ) {
+				current_digit_value = c - '0';
+			} else if ( c >= 'A' && c <= 'F' ) {
+				current_digit_value = 10 + c - 'A';
+			} else if ( c >= 'a' && c <= 'f' ) {
+				current_digit_value = 10 + c - 'a';
+			} else  if ( valid_separators.find( c ) != String::npos ) {
+				continue;
+			} else {
+				result.countOfInvalidChars++;
+				result.invalidCharMap[c].push_back( i );
+				switch ( operation_invalid_char_detected ) {
+					case OperationForInvalidCharDetected::PartialReturn:
+						return result;
+					case OperationForInvalidCharDetected::ZeroValueReturn:
+						result.value = StdBitset<BitSize>( 0 );
+						return result;
+					case OperationForInvalidCharDetected::AssumeZeroContinue:
+						current_digit_value = 0;
+						break;
+					case OperationForInvalidCharDetected::SkipContinue:
+						continue;
+				}
+			}
+
+			blocks++;
+			if ( (blocks == maxBlocks) &&(finalRestBits !=0) ) currentBlockBits = finalRestBits;
+
+			result.value <<= currentBlockBits;
+
+			for ( size_t bid = 0; bid < currentBlockBits; bid++ ) {
+				result.value[currentBlockBits - 1 - bid] = ( current_digit_value >> ( 3 - bid ) ) & 1;
+			}
+
+		}
+
+
+		return result;
+	}
+
+
+	template <size_t BitSize> static  StdBitset<BitSize>  FromHexadecimalStringPriorityLSB( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> parsed = FromHexadecimalStringPriorityLSBStrict< BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+		return parsed.value;
+	}
+	template <size_t BitSize> static  ParseResult<BitSize>  FromHexadecimalStringPriorityLSBStrict( const String& str, const OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		ParseResult<BitSize> result;
+
+		if ( BitSize < 4 ) {
+			ParseResult<4> pr4 = FromHexadecimalStringPriorityLSBStrict<4>( str, operation_invalid_char_detected, valid_separators );
+			result.countOfInvalidChars = pr4.countOfInvalidChars;
+			result.invalidCharMap = std::move( pr4.invalidCharMap );
+			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
+			return result;
+		}
+
+		uint8_t current_digit_value = 0;
+		size_t slen = str.length( );
+
+		size_t maxBlocks = BitSize / 4;
+		const size_t finalRestBits = BitSize % 4;
+
+		if ( finalRestBits != 0 ) maxBlocks++;
+
+		CharT c;
+
+		size_t currentBlockBits = 4;
+		size_t realIndex;
+
+		for ( size_t i = 0, blocks = 0; ( i < slen ) && ( blocks < maxBlocks ); i++ ) {
+
+			realIndex = slen - 1 - i;
+			c = str[realIndex];
+
+			if ( c >= '0' && c <= '9' ) {
+				current_digit_value = c - '0';
+			} else if ( c >= 'A' && c <= 'F' ) {
+				current_digit_value = 10 + c - 'A';
+			} else if ( c >= 'a' && c <= 'f' ) {
+				current_digit_value = 10 + c - 'a';
+			} else  if ( valid_separators.find( c ) != String::npos ) {
+				continue;
+			} else {
+				result.countOfInvalidChars++;
+				result.invalidCharMap[c].push_back( realIndex );
+				switch ( operation_invalid_char_detected ) {
+					case OperationForInvalidCharDetected::PartialReturn:
+						return result;
+					case OperationForInvalidCharDetected::ZeroValueReturn:
+						result.value = StdBitset<BitSize>( 0 );
+						return result;
+					case OperationForInvalidCharDetected::AssumeZeroContinue:
+						current_digit_value = 0;
+						break;
+					case OperationForInvalidCharDetected::SkipContinue:
+						continue;
+				}
+			}
+
+			blocks++;
+			if ( ( blocks == maxBlocks ) && ( finalRestBits != 0 ) ) currentBlockBits = finalRestBits;
+
+			for ( size_t bid = 0; bid < currentBlockBits; bid++ ) {
+				result.value[4 * ( blocks - 1 ) + bid] = ( current_digit_value >> bid ) & 1;
+			}
+
+		}
+
+		return result;
+	}
+
+
 
 	static String CreateSeparatedString( const String& str, size_t  group_size = 3, const CharT separate_char = ' ' ) {
 		if ( group_size == 0 ) return str;

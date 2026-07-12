@@ -149,13 +149,7 @@ int main( ) {
 
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
-	auto a  = Conv::FromBinaryStringStrict<16>( "0110 X 1000 Y 0000 0001", Conv::OperationForInvalidCharDetected::PartialReturn);
-
-
-	CUnsignedBitNumber16 b;
-
-	b.fromBinaryString<char>( "000" );
-
+	auto a  = Conv::FromHexadecimalStringPriorityLSBStrict<18>( "FFFF3", Conv::OperationForInvalidCharDetected::SkipContinue);
 
 	printf( "ic = %zu\n", a.countOfInvalidChars );
 
@@ -170,14 +164,16 @@ int main( ) {
 		printf( "\n" );
 	}
 	
-		printf( "\n\n\n%s\n", CUnsignedBitNumber16( a.value ).toJsonLikedString( ).c_str( ) );
+	printf( "\n\n\n%s\n", CUnsignedBitNumberA( a.value ).toJsonLikedString( ).c_str( ) );
 
 
-	CUnsignedBitNumber16 n16;
 
-	n16.raw = Conv::FromBinaryString<16>( "0110 X 1000 Y 0000 0001" );
+	CUnsignedBitNumberA<18> n( a.value );
 
-	printf( "\n%s\n", n16.toJsonLikedString( ).c_str( ) );
+	printf( "\n\n\n%s\n", n.toJsonLikedString( ).c_str( ) );
+
+
+
 
 	return 0;
 }
