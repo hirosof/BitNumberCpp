@@ -194,34 +194,6 @@ public:
 		return result_string;
 	}
 
-	template <size_t BitSize> static  StdBitset<BitSize>  FromDecimalStringLegacy( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
-		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
-		StdBitset<BitSize> result;
-		if ( BitSize < 4 ) {
-			std::bitset<4> bs = FromDecimalString<4>( str, valid_separators );
-			for ( size_t i = 0; i < BitSize; i++ )  result[i] = bs[i];
-			return result;
-		}
-		const StdBitset<BitSize>  bit_of_ten( 10 );
-		StdBitset<BitSize> current_digit_bitset( 0 );
-		uint8_t current_digit_value;
-		for ( CharT c : str ) {
-			if ( c >= '0' && c <= '9' ) {
-				current_digit_value = c - '0';
-				current_digit_bitset[0] = current_digit_value & 1;
-				current_digit_bitset[1] = ( current_digit_value >> 1 ) & 1;
-				current_digit_bitset[2] = ( current_digit_value >> 2 ) & 1;
-				current_digit_bitset[3] = ( current_digit_value >> 3 ) & 1;
-				result = CStdBitsetUnsignedOperation::Multiplication( result, bit_of_ten );
-				result = CStdBitsetUnsignedOperation::Addition( result, current_digit_bitset );
-			} else if ( valid_separators.find( c ) == String::npos ) {
-				break;
-			}
-		}
-		return result;
-	}
-
-
 	template <size_t BitSize> static  StdBitset<BitSize>  FromDecimalString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		ParseResult<BitSize> parsed = FromDecimalStringStrict< BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
@@ -303,44 +275,12 @@ public:
 		return result_string;
 	}
 
-	// 後記のFromHexadecimalString系関数の実装に失敗した時のため旧実装はFromHexadecimalStringLegacyは一旦残しておく
-	template <size_t BitSize> static  StdBitset<BitSize>  FromHexadecimalStringLegacy( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
-		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
-
-		StdBitset<BitSize> result;
-		if ( BitSize < 4 ) {
-			std::bitset<4> bs = FromHexadecimalString<4>( str, valid_separators );
-			for ( size_t i = 0; i < BitSize; i++ )  result[i] = bs[i];
-			return result;
-		}
-		uint8_t current_digit_value = 0;
-		for ( CharT c : str ) {
-			if ( c >= '0' && c <= '9' ) {
-				current_digit_value = c - '0';
-			} else if ( c >= 'A' && c <= 'F' ) {
-				current_digit_value = 10 + c - 'A';
-			} else if ( c >= 'a' && c <= 'f' ) {
-				current_digit_value = 10 + c - 'a';
-			} else  if ( valid_separators.find( c ) != String::npos ) {
-				continue;
-			} else {
-				break;
-			}
-
-			result <<= 4;
-			result[0] = current_digit_value & 1;
-			result[1] = ( current_digit_value >> 1 ) & 1;
-			result[2] = ( current_digit_value >> 2 ) & 1;
-			result[3] = ( current_digit_value >> 3 ) & 1;
-		}
-		return result;
-	}
-
 	template <size_t BitSize> static  StdBitset<BitSize>  FromHexadecimalString( const String& str, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		ParseResult<BitSize> parsed = FromHexadecimalStringStrict< BitSize>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
 		return parsed.value;
 	}
+
 	template <size_t BitSize> static  ParseResult<BitSize>  FromHexadecimalStringStrict( const String& str, const OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = DEFAULT_VALID_SEPARATORS ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		ParseResult<BitSize> result;
