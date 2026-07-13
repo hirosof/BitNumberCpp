@@ -265,13 +265,16 @@ public:
 	}
 
 	template<size_t BitSizeL, size_t BitSizeR>  static  CompareResult CompareExtend( StdBitsetConstRef<BitSizeL> input_left, StdBitsetConstRef<BitSizeR> input_right ) {
+		static_assert( BitSizeL > 0, "BitSizeLは無効な値です。" );
+		static_assert( BitSizeR > 0, "BitSizeRは無効な値です。" );
 
 		if  constexpr ( BitSizeL == BitSizeR ) {
 			return Compare<BitSizeL>( input_left, input_right );
 		} else if  constexpr ( BitSizeL > BitSizeR ) {
 			return Compare<BitSizeL>( input_left, CastSize<BitSizeL>( input_right ) );
+		} else {
+			return Compare<BitSizeR>( CastSize<BitSizeR>( input_left ), input_right );
 		}
-		return Compare<BitSizeR>( CastSize<BitSizeR>( input_left ), input_right );
 
 	}
 
