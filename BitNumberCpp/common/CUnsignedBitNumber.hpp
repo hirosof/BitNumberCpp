@@ -123,6 +123,8 @@ public:
 
 	bool rangeSet( size_t start_index, size_t size, bool value = true ) {
 		if ( size == 0 )return true;
+		if ( size >= BitSize ) return rangeSetIndex( start_index, BitSize - 1, value );
+		if ( start_index >= BitSize ) return false;
 		return rangeSetIndex( start_index, start_index + size - 1, value );
 	}
 
@@ -157,8 +159,7 @@ public:
 	}
 
 	bool rangeUnset( size_t start_index, size_t size ) {
-		if ( size == 0 )return true;
-		return rangeUnsetIndex( start_index, start_index + size - 1 );
+		return rangeSet( start_index, size, false );
 	}
 
 
@@ -892,77 +893,107 @@ public:
 		ランダム生成
 	*/
 
-	void selfUpdateRandom( size_t offset = 0, size_t fill_bit_size = BitSize, bool partial = false ) {
+	struct RealRangeForRandomIssue{
+		size_t offset_of_least;
+		size_t fill_bit_size;
+	};
 
-		if ( fill_bit_size == 0 )return;
+	struct RandomIssueResult {
+		CUnsignedBitNumber value;
+		RealRangeForRandomIssue realRange;
+	};
 
-		if ( offset >= BitSize ) {
-			if ( !partial ) {
-				clear( );
+
+	RealRangeForRandomIssue selfUpdateRandom( const size_t offset = 0, const size_t fill_bit_size = BitSize, const bool partial = false ) {
+		
+		return this->selfUpdateRandomExtend( offset, fill_bit_size, OffsetBasis::Least, partial );
+	}
+
+
+	RealRangeForRandomIssue selfUpdateRandomExtend(const  size_t offset = 0, const size_t fill_bit_size = BitSize,const OffsetBasis offset_basis = OffsetBasis::Least,const  bool partial = false ) {
+
+		RealRangeForRandomIssue issue;
+		issue.fill_bit_size = 0;
+		issue.offset_of_least = 0;
+
+		size_t least_based_offset, least_based_fill_size;
+
+		if ( offset_basis == OffsetBasis::Least ) {
+			least_based_offset =std::min(offset , BitSize);
+			least_based_fill_size = std::min( fill_bit_size, BitSize);;
+		} else if ( offset_basis == OffsetBasis::Most ) {
+
+			size_t under_flow_size = 0;
+
+			if ( offset >= BitSize ) {
+				least_based_offset = 0;
+				under_flow_size = offset - BitSize + 1;					 
+			} else {
+				least_based_offset = BitSize - 1 - offset;
 			}
-			return;
+
+			if ( fill_bit_size == 0 ) {
+				least_based_fill_size = 0;
+			} else {
+
+				size_t clip_fill_bit_size = std::min( fill_bit_size, BitSize );
+
+				if ( least_based_offset >= ( clip_fill_bit_size - 1 ) ) {
+
+					least_based_offset -= clip_fill_bit_size - 1;
+					least_based_fill_size = clip_fill_bit_size;
+
+				} else {
+
+					under_flow_size += ( clip_fill_bit_size - 1 ) - least_based_offset;
+					least_based_fill_size = ( clip_fill_bit_size >= under_flow_size ) ? clip_fill_bit_size - under_flow_size : 0;
+
+					least_based_offset = 0;
+				}
+
+			}
+
+		} else {
+			return issue;
 		}
 
-		StdBitset  sb = CStdBitsetUnsignedOperation::Random<BitSize>( fill_bit_size );
+		if ( !partial ) clear( );
+		if ( least_based_fill_size == 0 ) return issue;
+		if ( least_based_offset >= BitSize ) return issue;
 
-		sb <<= offset;
+		StdBitset  sb = CStdBitsetUnsignedOperation::Random<BitSize>( least_based_fill_size );
+
+		sb <<= least_based_offset;
+
+		auto setting_range = ClipRangeIndex( least_based_offset, least_based_offset + least_based_fill_size - 1 );
+
+		issue.offset_of_least = setting_range.first;
+		issue.fill_bit_size = setting_range.second - setting_range.first + 1;
 
 		if ( !partial ) {
 			this->raw = sb;
-		} else {
-			auto setting_range = ClipRangeIndex( offset, offset + fill_bit_size - 1 );
+		} else {		
 			for ( size_t i = setting_range.first; i <= setting_range.second; i++ ) {
 				this->raw[i] = sb[i];
 			}
 		}
 
+		return issue;
 	}
 
 
-	void selfUpdateRandomExtend( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least, bool partial = false ) {
-
-		if ( offset_basis == OffsetBasis::Least ) {
-			selfUpdateRandom( offset, fill_bit_size, partial );
-			return;
-		}
-
-		// LSBベースの位置に変換
-		size_t real_offset = offset + fill_bit_size - 1;
-		size_t least_base_offset;
-		size_t under_size = 0;
-		if ( real_offset < BitSize ) {
-			least_base_offset = BitSize - 1 - real_offset;
-		} else {
-			least_base_offset = 0;
-			under_size = real_offset - BitSize + 1;
-		}
-
-		// アンダーフローしたサイズを考慮してフィルサイズの再設定を行う
-		size_t new_fill_size;
-		if ( under_size == 0 ) {
-			new_fill_size = fill_bit_size;
-		} else {
-			if ( under_size > fill_bit_size ) {
-				new_fill_size = 0;
-			} else {
-				new_fill_size = fill_bit_size - under_size;
-			}
-		}
-
-		selfUpdateRandom( least_base_offset, new_fill_size, partial );
+	static RandomIssueResult Random( size_t offset = 0, size_t fill_bit_size = BitSize ) {
+		RandomIssueResult res;
+		res.realRange = res.value.selfUpdateRandom( offset, fill_bit_size );
+		return res;
 	}
 
+	static RandomIssueResult RandomExtend( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least ) {
+		RandomIssueResult res;
+		res.realRange = res.value.selfUpdateRandomExtend( offset, fill_bit_size, offset_basis );
+		return res;
+	}
 
-	static CUnsignedBitNumber Random( size_t offset = 0, size_t fill_bit_size = BitSize ) {
-		CUnsignedBitNumber num;
-		num.selfUpdateRandom( offset, fill_bit_size );
-		return num;
-	}
-	static CUnsignedBitNumber RandomExtend( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least ) {
-		CUnsignedBitNumber num;
-		num.selfUpdateRandomExtend( offset, fill_bit_size, offset_basis );
-		return num;
-	}
 };
 
 template <size_t BitSize> using CUnsignedBitNumberA = CUnsignedBitNumber<BitSize, char>;

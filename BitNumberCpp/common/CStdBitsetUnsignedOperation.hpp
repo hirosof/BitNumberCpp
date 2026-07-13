@@ -292,7 +292,7 @@ public:
 
 	template<size_t BitSize>  static  StdBitset<BitSize> Random( size_t fill_bit_size = BitSize ) {
 
-		static  std::mt19937_64   mtRandom( std::random_device {}( ) );
+		static thread_local  std::mt19937_64   mtRandom( std::random_device {}( ) );
 
 		StdBitset<BitSize>result;
 
