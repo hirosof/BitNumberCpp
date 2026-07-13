@@ -772,7 +772,7 @@ public:
 	}
 
 	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromBinaryStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {	
-		auto parsed = StringConv<CharT>::FromBinaryStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
+		auto parsed = StringConv<CharT>::template FromBinaryStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
 		this->raw = parsed.value;
 		return parsed.info;
 	}
@@ -782,7 +782,7 @@ public:
 	}
 
 	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromBinaryStringPriorityLSBStrict( const std::basic_string<CharT>& str,const  OperationForInvalidCharDetected operation_invalid_char_detected,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		auto parsed = StringConv<CharT>::FromBinaryStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		auto parsed = StringConv<CharT>::template FromBinaryStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
 		this->raw = parsed.value;
 		return parsed.info;
 	}
@@ -792,7 +792,7 @@ public:
 	}
 
 	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromDecimalStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		auto parsed = StringConv<CharT>::FromDecimalStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
+		auto parsed = StringConv<CharT>::template FromDecimalStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
 		this->raw = parsed.value;
 		return parsed.info;
 	}
@@ -803,7 +803,7 @@ public:
 	}
 
 	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromHexadecimalStringStrict( const std::basic_string<CharT>& str,const  OperationForInvalidCharDetected operation_invalid_char_detected ,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {		
-		auto parsed = StringConv<CharT>::FromHexadecimalStringStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		auto parsed = StringConv<CharT>::template FromHexadecimalStringStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
 		this->raw = parsed.value;
 		return parsed.info;
 	}
@@ -813,7 +813,7 @@ public:
 	}
 
 	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromHexadecimalStringPriorityLSBStrict( const std::basic_string<CharT>& str,const  OperationForInvalidCharDetected operation_invalid_char_detected ,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		auto parsed = StringConv<CharT>::FromHexadecimalStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		auto parsed = StringConv<CharT>::template FromHexadecimalStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
 		this->raw = parsed.value;
 		return parsed.info;
 	}
@@ -834,7 +834,7 @@ public:
 
 	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromBinaryStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		ParsedData<CharT> res;
-		res.info = res.value.fromBinaryStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		res.info = res.value.template fromBinaryStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
 		return res;
 	}
 
@@ -846,7 +846,7 @@ public:
 
 	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromBinaryStringPriorityLSBStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		ParsedData<CharT> res;
-		res.info = res.value.fromBinaryStringPriorityLSBStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		res.info = res.value.template fromBinaryStringPriorityLSBStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
 		return res;
 	}
 
@@ -860,7 +860,7 @@ public:
 
 	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromDecimalStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		ParsedData<CharT> res;
-		res.info = res.value.fromDecimalStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		res.info = res.value.template fromDecimalStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
 		return res;
 	}
 
@@ -873,7 +873,7 @@ public:
 
 	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromHexadecimalStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {		
 		ParsedData<CharT> res;
-		res.info =  res.value.fromHexadecimalStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		res.info =  res.value.template fromHexadecimalStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
 		return res;
 	}
 
@@ -885,7 +885,7 @@ public:
 
 	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromHexadecimalStringPriorityLSBStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		ParsedData<CharT> res;
-		res.info =  res.value.fromHexadecimalStringPriorityLSBStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		res.info =  res.value.template fromHexadecimalStringPriorityLSBStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
 		return res;
 	}
 
