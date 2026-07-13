@@ -204,8 +204,7 @@ public:
 
 		if ( BitSize < 4 ) {
 			ParseResult<4> pr4 = FromDecimalStringStrict<4>( str, operation_invalid_char_detected, valid_separators );
-			result.info.countOfInvalidChars = pr4.info.countOfInvalidChars;
-			result.info.invalidCharMap = std::move( pr4.info.invalidCharMap );
+			result.info = std::move( pr4.info );
 			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
 			return result;
 		}
@@ -290,8 +289,7 @@ public:
 
 		if ( BitSize < 4 ) {
 			ParseResult<4> pr4 = FromHexadecimalStringStrict<4>( str, operation_invalid_char_detected, valid_separators );
-			result.info.countOfInvalidChars = pr4.info.countOfInvalidChars;
-			result.info.invalidCharMap = std::move( pr4.info.invalidCharMap );
+			result.info = std::move( pr4.info );
 			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
 			return result;
 		}
@@ -392,8 +390,7 @@ public:
 
 		if ( BitSize < 4 ) {
 			ParseResult<4> pr4 = FromHexadecimalStringPriorityLSBStrict<4>( str, operation_invalid_char_detected, valid_separators );
-			result.info.countOfInvalidChars = pr4.info.countOfInvalidChars;
-			result.info.invalidCharMap = std::move( pr4.info.invalidCharMap );
+			result.info = std::move( pr4.info );
 			result.value = CStdBitsetUnsignedOperation::CastSize<BitSize, 4>( pr4.value );
 			return result;
 		}
