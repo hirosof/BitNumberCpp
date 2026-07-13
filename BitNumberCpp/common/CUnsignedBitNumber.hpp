@@ -670,6 +670,7 @@ public:
 	/*
 		文字列への変換系
 	*/
+	template <typename CharT = DefaultCharType> using StringConv = CStdBitsetUnsignedStringConversion<CharT>;
 
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toJsonLikedString( bool enableSeparate = false )const {
 		std::basic_string<CharT> s, trans;
@@ -679,8 +680,7 @@ public:
 		s.push_back( ' ' );
 
 
-		// CStdBitsetUnsignedStringConversionのフルクラス名が少々長いため別名としてConvを定義
-		using Conv = CStdBitsetUnsignedStringConversion<CharT>;
+		using Conv = StringConv<CharT>;
 
 		//bin
 		s.append( { '\"' ,  'b' , 'i' , 'n' , '\"' ,  ':' , '\"' } );
@@ -731,50 +731,145 @@ public:
 	}
 
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toBinaryString( )const {
-		return CStdBitsetUnsignedStringConversion<CharT>::ToBinaryString( this->raw );
+		return StringConv<CharT>::ToBinaryString( this->raw );
 	}
 
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toDecimalString( )const {
-		return CStdBitsetUnsignedStringConversion<CharT>::ToDecimalString( this->raw );
+		return StringConv<CharT>::ToDecimalString( this->raw );
 	}
 
 	template<typename CharT = DefaultCharType> std::basic_string<CharT> toHexadecimalString( bool upper_case = false ) const {
-		return CStdBitsetUnsignedStringConversion<CharT>::ToHexadecimalString( this->raw, upper_case );
+		return StringConv<CharT>::ToHexadecimalString( this->raw, upper_case );
 	}
 
 
 	/*
 		文字列からの変換系
 	*/
+		
+	using OperationForInvalidCharDetected = CBitsetStringConvSupport::OperationForInvalidCharDetected;
+	template<typename CharT = DefaultCharType> using ParseProcessedInfo = CBitsetStringConvSupport::ParseProcessedInfo<CharT>;
 
-	template<typename CharT = DefaultCharType> void  fromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromBinaryStringPriorityLSB< BitSize>( str, valid_separators );
+	template<typename CharT = DefaultCharType> void  fromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ){
+		this->fromBinaryStringStrict<CharT>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
 	}
 
-	template<typename CharT = DefaultCharType> void  fromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromDecimalString< BitSize>( str, valid_separators );
+	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromBinaryStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {	
+		auto parsed = StringConv<CharT>::FromBinaryStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->raw = parsed.value;
+		return parsed.info;
 	}
 
-	template<typename CharT = DefaultCharType> void  fromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
-		this->raw = CStdBitsetUnsignedStringConversion<CharT>::FromHexadecimalString< BitSize>( str, valid_separators );
+	template<typename CharT = DefaultCharType> void  fromBinaryStringPriorityLSB( const std::basic_string<CharT>& str,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ){
+		this->fromBinaryStringPriorityLSBStrict<CharT>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
 	}
 
-	template<typename CharT = DefaultCharType> static  CUnsignedBitNumber  CreateFromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
+	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromBinaryStringPriorityLSBStrict( const std::basic_string<CharT>& str,const  OperationForInvalidCharDetected operation_invalid_char_detected,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv<CharT>::FromBinaryStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->raw = parsed.value;
+		return parsed.info;
+	}
+
+	template<typename CharT = DefaultCharType> void  fromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		this->fromDecimalStringStrict<CharT>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromDecimalStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv<CharT>::FromDecimalStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->raw = parsed.value;
+		return parsed.info;
+	}
+
+
+	template<typename CharT = DefaultCharType> void  fromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		this->fromHexadecimalStringStrict<CharT>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromHexadecimalStringStrict( const std::basic_string<CharT>& str,const  OperationForInvalidCharDetected operation_invalid_char_detected ,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {		
+		auto parsed = StringConv<CharT>::FromHexadecimalStringStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->raw = parsed.value;
+		return parsed.info;
+	}
+
+	template<typename CharT = DefaultCharType> void  fromHexadecimalStringPriorityLSB( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		this->fromHexadecimalStringPriorityLSBStrict<CharT>( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	template<typename CharT = DefaultCharType>  ParseProcessedInfo<CharT>  fromHexadecimalStringPriorityLSBStrict( const std::basic_string<CharT>& str,const  OperationForInvalidCharDetected operation_invalid_char_detected ,const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv<CharT>::FromHexadecimalStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->raw = parsed.value;
+		return parsed.info;
+	}
+
+	template<typename CharT = DefaultCharType> class ParsedData {
+	public:
+		CUnsignedBitNumber  value;
+		ParseProcessedInfo<CharT> info;
+		ParsedData( ) : value( 0 ), info( ) {}
+	};
+	
+
+	template<typename CharT = DefaultCharType> static  CUnsignedBitNumber  CreateFromBinaryString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		CUnsignedBitNumber ubn;
 		ubn.fromBinaryString<CharT>( str, valid_separators );
 		return ubn;
 	}
 
-	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
+	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromBinaryStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		ParsedData<CharT> res;
+		res.info = res.value.fromBinaryStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+	template<typename CharT = DefaultCharType> static  CUnsignedBitNumber  CreateFromBinaryStringPriorityLSB( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		CUnsignedBitNumber ubn;
+		ubn.fromBinaryStringPriorityLSB<CharT>( str, valid_separators );
+		return ubn;
+	}
+
+	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromBinaryStringPriorityLSBStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		ParsedData<CharT> res;
+		res.info = res.value.fromBinaryStringPriorityLSBStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+
+
+	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromDecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		CUnsignedBitNumber ubn;
 		ubn.fromDecimalString<CharT>( str, valid_separators );
 		return ubn;
 	}
 
-	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = CStdBitsetUnsignedStringConversion<CharT>::DEFAULT_VALID_SEPARATORS ) {
+	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromDecimalStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		ParsedData<CharT> res;
+		res.info = res.value.fromDecimalStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+
+	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromHexadecimalString( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
 		CUnsignedBitNumber ubn;
 		ubn.fromHexadecimalString<CharT>( str, valid_separators );
 		return ubn;
+	}
+
+	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromHexadecimalStringStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {		
+		ParsedData<CharT> res;
+		res.info =  res.value.fromHexadecimalStringStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+	template<typename CharT = DefaultCharType> static CUnsignedBitNumber  CreateFromHexadecimalStringPriorityLSB( const std::basic_string<CharT>& str, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		CUnsignedBitNumber ubn;
+		ubn.fromHexadecimalStringPriorityLSB<CharT>( str, valid_separators );
+		return ubn;
+	}
+
+	template<typename CharT = DefaultCharType> static  ParsedData<CharT>  CreateFromHexadecimalStringPriorityLSBStrict( const std::basic_string<CharT>& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const std::basic_string<CharT>& valid_separators = StringConv<CharT>::DEFAULT_VALID_SEPARATORS ) {
+		ParsedData<CharT> res;
+		res.info =  res.value.fromHexadecimalStringPriorityLSBStrict<CharT>( str, operation_invalid_char_detected, valid_separators );
+		return res;
 	}
 
 	/*

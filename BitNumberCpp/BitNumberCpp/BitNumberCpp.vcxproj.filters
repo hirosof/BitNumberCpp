@@ -29,5 +29,8 @@
     <ClInclude Include="..\common\CStdBitsetUnsignedStringConversion.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\CBitsetStringConvSupport.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

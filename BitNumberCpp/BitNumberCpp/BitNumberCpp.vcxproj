@@ -161,6 +161,7 @@
     <ClInclude Include="..\common\CStdBitsetUnsignedOperation.hpp" />
     <ClInclude Include="..\common\CStdBitsetUnsignedStringConversion.hpp" />
     <ClInclude Include="..\common\CUnsignedBitNumber.hpp" />
+    <ClInclude Include="..\common\CBitsetStringConvSupport.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

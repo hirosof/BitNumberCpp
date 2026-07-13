@@ -11,8 +11,7 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 
 #include <cstdint>
 #include <string>
-#include <map>
-#include <vector>
+#include "CBitsetStringConvSupport.hpp"
 #include "CStdBitsetUnsignedOperation.hpp"
 
 template <typename CharT> class CStdBitsetUnsignedStringConversion {
@@ -27,49 +26,11 @@ public:
 
 	inline static const String DEFAULT_VALID_SEPARATORS = String( { ' ', ',' } );
 
-	// From系の関数で無効文字検出時の動作モード
-	enum struct OperationForInvalidCharDetected {
-
-		// 部分パース(成功している部分までの値)の結果を返す
-		// 例：10進数文字列として "1234X5678"が指定された場合 → 1234 を表す値が返る
-		PartialReturn = 0,
-
-		// 0を表す値を返す
-		ZeroValueReturn,
-
-		// '0' が指定したものと解釈し、処理を続行する
-		// 例：10進数文字列として "1234X5678"が指定された場合 → 123405678 を表す値が返る
-		AssumeZeroContinue,
-
-		// その値を無視して処理を続行する
-		// 例：10進数文字列として "1234X5678"が指定された場合 → 12345678 を表す値が返る
-		SkipContinue
-	};
-
-	using InvalidCharMapType = std::map<CharT, std::vector<size_t>>;
+	using OperationForInvalidCharDetected = CBitsetStringConvSupport::OperationForInvalidCharDetected;
+	using ParseProcessedInfo = CBitsetStringConvSupport::ParseProcessedInfo<CharT>;
 
 
-	class ProcessStringLengthInfo {
-	public:
-		size_t specified;		//指定された文字列の総文字数
-		size_t processed;		// 処理した文字数
-
-		ProcessStringLengthInfo( ) : specified( 0 ), processed( 0 ) {}
-	};
-
-	class ParseProcessedInfo {
-	public:
-		size_t countOfInvalidChars;
-		InvalidCharMapType invalidCharMap;
-
-		ProcessStringLengthInfo processLength;
-
-		ParseProcessedInfo( ) : countOfInvalidChars( 0 ), invalidCharMap( ), processLength( ) {}
-	};
-
-
-
-	template<size_t BitSize>	 class ParseResult {
+	template<size_t BitSize> class ParseResult {
 	public:
 		StdBitset<BitSize>  value;
 
@@ -359,11 +320,11 @@ public:
 			result.info.processLength.processed++;
 
 			if ( c >= '0' && c <= '9' ) {
-				current_digit_value = c - '0';
+				current_digit_value = static_cast<uint8_t>(c - '0');
 			} else if ( c >= 'A' && c <= 'F' ) {
-				current_digit_value = 10 + c - 'A';
+				current_digit_value = static_cast < uint8_t>(10 + c - 'A');
 			} else if ( c >= 'a' && c <= 'f' ) {
-				current_digit_value = 10 + c - 'a';
+				current_digit_value = static_cast < uint8_t>(10 + c - 'a');
 			} else  if ( valid_separators.find( c ) != String::npos ) {
 				continue;
 			} else {

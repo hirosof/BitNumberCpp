@@ -150,16 +150,29 @@ int main( ) {
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
 
+	//  ただインスタンスを作成するためだけの呼び出し群
 	Conv::FromBinaryString<16>( "0000" );
 	Conv::FromBinaryStringPriorityLSB<16>( "0000" );
-
 	Conv::FromDecimalString<16>( "0000" );
 	Conv::FromHexadecimalString<16>( "0000" );
-
 	Conv::FromHexadecimalStringPriorityLSB<16>( "0000" );
 
-	auto a  = Conv::FromBinaryStringPriorityLSBStrict<6>( "16F00", Conv::OperationForInvalidCharDetected::PartialReturn);
 
+	CUnsignedBitNumber32::CreateFromBinaryString<char>( "1F00XD" );
+	CUnsignedBitNumber32::CreateFromBinaryStringPriorityLSB<char>( "1F00XD" );
+	CUnsignedBitNumber32::CreateFromDecimalString<char>( "1F00XD" );
+	CUnsignedBitNumber32::CreateFromHexadecimalString<char>( "1F00XD" );
+	CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB<char>( "1F00XD" );
+
+
+	CUnsignedBitNumber32::CreateFromBinaryStringStrict<char>( "1F00XD", Conv::OperationForInvalidCharDetected::PartialReturn );
+	CUnsignedBitNumber32::CreateFromBinaryStringPriorityLSBStrict<char>( "1F00XD", Conv::OperationForInvalidCharDetected::PartialReturn );
+	CUnsignedBitNumber32::CreateFromDecimalStringStrict<char>( "1F00XD", Conv::OperationForInvalidCharDetected::PartialReturn );
+	CUnsignedBitNumber32::CreateFromHexadecimalStringStrict<char>( "1F00XD", Conv::OperationForInvalidCharDetected::PartialReturn );
+	CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSBStrict<char>( "1F00XD", Conv::OperationForInvalidCharDetected::PartialReturn );
+
+
+	auto a  = Conv::FromBinaryStringPriorityLSBStrict<6>( "16F00", Conv::OperationForInvalidCharDetected::PartialReturn);
 
 	printf( "processed = %zu , spec = %zu\n", a.info.processLength.processed , a.info.processLength.specified );
 
@@ -177,6 +190,24 @@ int main( ) {
 	
 	printf( "\n\n\n%s\n", CUnsignedBitNumberA( a.value ).toJsonLikedString( ).c_str( ) );
 
+	using OpeMode = CBitsetStringConvSupport::OperationForInvalidCharDetected;
+
+
+	auto n = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSBStrict<char>( "1F00XD", OpeMode::PartialReturn );
+
+	CUnsignedBitNumber32  n32 = n.value;
+
+
+	auto info2 = n.info;  //n32.fromHexadecimalStringStrict<wchar_t>( L"001F X CD00",  CUnsignedBitNumber32::OperationForInvalidCharDetected::PartialReturn );
+
+	printf( "inv = %zu\n", info2.countOfInvalidChars );
+	printf( "info = %s\n", n32.toJsonLikedString<char>().c_str() );
+
+
+
+
+	n32.fromHexadecimalString<char>( "0" );
+	n32.fromHexadecimalString<wchar_t>( L"0" );
 
 
 
