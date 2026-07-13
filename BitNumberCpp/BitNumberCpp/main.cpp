@@ -151,24 +151,24 @@ int main( ) {
 
 
 	CUnsignedBitNumber32  n128;
+	size_t fs = 1;
 
 	for ( size_t offset = 0; offset < 64; offset++ ) {
-		auto info = n128.selfUpdateRandomExtend( offset, 6 , CUnsignedBitNumber32::OffsetBasis::Most, false );
+		auto info = n128.selfUpdateRandomExtend( offset, fs , CUnsignedBitNumber32::OffsetBasis::Most, false );
 
 		n128.clear( );
 		n128.rangeSet( info.offset_of_least, info.fill_bit_size );
 
-		printf( "%s\n", Conv::CreateSeparatedStringWithZeroPadded( n128.toBinaryString<char>( ), 32, 4 ).c_str());
-
+		printf( "\t%02zu : %s\n", offset, Conv::CreateSeparatedStringWithZeroPadded( n128.toBinaryString<char>( ), 32, 4 ).c_str( ) );
 	}
 	printf( "\n" );
 	for ( size_t offset = 0; offset < 64; offset++ ) {
-		auto info = n128.selfUpdateRandomExtend( offset, 6 , CUnsignedBitNumber32::OffsetBasis::Least, false );
+		auto info = n128.selfUpdateRandomExtend( offset, fs , CUnsignedBitNumber32::OffsetBasis::Least, false );
 
 		n128.clear( );
 		n128.rangeSet( info.offset_of_least, info.fill_bit_size );
 
-		printf( "\t%zu : %s\n", offset ,Conv::CreateSeparatedStringWithZeroPadded( n128.toBinaryString<char>( ), 32, 4 ).c_str());
+		printf( "\t%02zu : %s\n", offset ,Conv::CreateSeparatedStringWithZeroPadded( n128.toBinaryString<char>( ), 32, 4 ).c_str());
 
 	}
 

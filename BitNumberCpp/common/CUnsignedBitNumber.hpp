@@ -123,9 +123,9 @@ public:
 
 	bool rangeSet( size_t start_index, size_t size, bool value = true ) {
 		if ( size == 0 )return true;
-		if ( size >= BitSize ) return rangeSetIndex( start_index, BitSize - 1, value );
 		if ( start_index >= BitSize ) return false;
-		return rangeSetIndex( start_index, start_index + size - 1, value );
+		if ( size >= BitSize ) return rangeSetIndex( start_index, BitSize - 1, value );
+		return rangeSetIndex( ClipRangeIndex( start_index, start_index + size - 1 ), value );
 	}
 
 	bool rangeSetIndex( size_t index1, size_t index2, bool value = true ) {
@@ -893,14 +893,22 @@ public:
 		ランダム生成
 	*/
 
-	struct RealRangeForRandomIssue{
+	class RealRangeForRandomIssue{
+	public:
 		size_t offset_of_least;
 		size_t fill_bit_size;
+
+
+		RealRangeForRandomIssue() : offset_of_least(0 ) , fill_bit_size(0 ){}
+
 	};
 
-	struct RandomIssueResult {
+	class RandomIssueResult {
+	public:
 		CUnsignedBitNumber value;
 		RealRangeForRandomIssue realRange;
+
+		RandomIssueResult() : value( 0 ) , realRange(){}
 	};
 
 
@@ -939,17 +947,13 @@ public:
 				size_t clip_fill_bit_size = std::min( fill_bit_size, BitSize );
 
 				if ( least_based_offset >= ( clip_fill_bit_size - 1 ) ) {
-
 					least_based_offset -= clip_fill_bit_size - 1;
-					least_based_fill_size = clip_fill_bit_size;
-
 				} else {
-
 					under_flow_size += ( clip_fill_bit_size - 1 ) - least_based_offset;
-					least_based_fill_size = ( clip_fill_bit_size >= under_flow_size ) ? clip_fill_bit_size - under_flow_size : 0;
-
 					least_based_offset = 0;
 				}
+				
+				least_based_fill_size = ( clip_fill_bit_size >= under_flow_size ) ? clip_fill_bit_size - under_flow_size : 0;
 
 			}
 
