@@ -617,9 +617,9 @@ public:
 				return CompareResult::SelfGreater;
 			case CStdBitsetUnsignedOperation::CompareResult::RightGreater:
 				return CompareResult::TargetGreater;
-		}
-
-		return CompareResult::Equal;
+			case CStdBitsetUnsignedOperation::CompareResult::Equal:
+				return CompareResult::Equal;
+		}		
 	}
 
 
@@ -632,9 +632,10 @@ public:
 				return CompareResult::SelfGreater;
 			case CStdBitsetUnsignedOperation::CompareResult::RightGreater:
 				return CompareResult::TargetGreater;
-		}
+			case CStdBitsetUnsignedOperation::CompareResult::Equal:
+				return CompareResult::Equal;
+		}	
 
-		return CompareResult::Equal;
 	}
 
 
@@ -657,9 +658,10 @@ public:
 				return std::strong_ordering::greater;
 			case CompareResult::TargetGreater:
 				return std::strong_ordering::less;
-		}
+			case CompareResult::Equal:
+				return std::strong_ordering::equal;
+		}		
 
-		return std::strong_ordering::equal;
 	}
 
 	bool  operator==( const  CUnsignedBitNumber& rhs ) const {

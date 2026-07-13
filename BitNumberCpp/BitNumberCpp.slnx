@@ -1,5 +1,9 @@
 <Solution>
   <Configurations>
+    <BuildType Name="ClangDebug" />
+    <BuildType Name="ClangRelease" />
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>

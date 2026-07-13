@@ -431,3 +431,7 @@ FodyWeavers.xsd
 # tempフォルダは除外
 
 temp
+
+# Build フォルダは除外
+
+Build
