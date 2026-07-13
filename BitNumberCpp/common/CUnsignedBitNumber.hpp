@@ -473,6 +473,22 @@ public:
 	}
 
 	/*
+		10倍
+	*/
+
+	CUnsignedBitNumber multiplication10( void ) const {
+		CUnsignedBitNumber result;
+		result.raw = CStdBitsetUnsignedOperation::Multiplication10( this->raw );
+		return result;
+	}
+
+	CUnsignedBitNumber selfUpdateMultiplication10(void) {
+		CUnsignedBitNumber result = multiplication10( );
+		this->raw = result.raw;
+		return result;
+	}
+
+	/*
 		除算
 	*/
 	SelfOptional  division( const CUnsignedBitNumber& value ) const {

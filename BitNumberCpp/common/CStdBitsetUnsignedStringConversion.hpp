@@ -211,7 +211,6 @@ public:
 		}
 
 		CharT c;
-		const StdBitset<BitSize>  bit_of_ten( 10 );
 		StdBitset<BitSize> current_digit_bitset( 0 );
 		uint8_t current_digit_value;
 
@@ -230,7 +229,7 @@ public:
 				current_digit_bitset[1] = ( current_digit_value >> 1 ) & 1;
 				current_digit_bitset[2] = ( current_digit_value >> 2 ) & 1;
 				current_digit_bitset[3] = ( current_digit_value >> 3 ) & 1;
-				result.value = CStdBitsetUnsignedOperation::Multiplication( result.value, bit_of_ten );
+				result.value = CStdBitsetUnsignedOperation::Multiplication10( result.value );
 				result.value = CStdBitsetUnsignedOperation::Addition( result.value, current_digit_bitset );
 			} else if ( valid_separators.find( c ) == String::npos ) {
 
@@ -245,7 +244,7 @@ public:
 						result.value = StdBitset<BitSize>( 0 );
 						return result;
 					case OperationForInvalidCharDetected::AssumeZeroContinue:
-						result.value = CStdBitsetUnsignedOperation::Multiplication( result.value, bit_of_ten );
+						result.value = CStdBitsetUnsignedOperation::Multiplication10( result.value );
 						break;
 					case OperationForInvalidCharDetected::SkipContinue:
 						break;

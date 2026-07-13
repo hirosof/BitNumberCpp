@@ -148,6 +148,19 @@ public:
 		return ox;
 	}
 
+	template<size_t BitSize>  static StdBitset<BitSize> Multiplication10( StdBitsetConstRef<BitSize> input ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		
+		// input == 0  の時、 input * 10 = 0
+		if ( input.none( ) ) {
+			//inputはすでに0のため、inputを返せば0を返すことになる
+			return input;
+		}
+
+		// input * 10 =  input * 8 + input * 2 = (input << 3 ) + (input << 1)
+		return Addition( input << 3, input << 1 );
+	}
+
 	template<size_t BitSize>  static OptionalStdBitset<BitSize> Division( StdBitsetConstRef<BitSize> input_a, StdBitsetConstRef<BitSize> input_b ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		OptionalStdBitsetPair<BitSize> dwr = DivisionWithRemainder( input_a, input_b );

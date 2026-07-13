@@ -193,7 +193,7 @@ int main( ) {
 	using OpeMode = CBitsetStringConvSupport::OperationForInvalidCharDetected;
 
 
-	auto n = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSBStrict<char>( "1F00XD", OpeMode::PartialReturn );
+	auto n = CUnsignedBitNumber32::CreateFromDecimalStringStrict<char>( "1852", OpeMode::PartialReturn );
 
 	CUnsignedBitNumber32  n32 = n.value;
 
@@ -201,7 +201,8 @@ int main( ) {
 	auto info2 = n.info;  //n32.fromHexadecimalStringStrict<wchar_t>( L"001F X CD00",  CUnsignedBitNumber32::OperationForInvalidCharDetected::PartialReturn );
 
 	printf( "inv = %zu\n", info2.countOfInvalidChars );
-	printf( "info = %s\n", n32.toJsonLikedString<char>().c_str() );
+	printf( "info = %s\n", n32.toJsonLikedString<char>( ).c_str( ) );
+	printf( "info*10 = %s\n", n32.selfUpdateMultiplication10().toJsonLikedString<char>( ).c_str( ) );
 
 
 
