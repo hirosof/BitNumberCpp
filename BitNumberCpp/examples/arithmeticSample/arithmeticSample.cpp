@@ -72,7 +72,6 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 
 	}
 
-
 	using Conv = CStdBitsetUnsignedStringConversion<wchar_t>;
 
 	CAtlStringW result;
@@ -81,7 +80,7 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 
 	result.AppendFormat( L"\t\t\"BitSize\":%zu,\n", BitSize );
 	result.AppendFormat( L"\t\t\"num1 max digits\":%zu,\n", valid_random_digits_num1 );
-	result.AppendFormat( L"\t\t\"num2 max digits\":%zu,\n", valid_random_digits_num2 );
+	result.AppendFormat( L"\t\t\"num2 max digits\":%zu,\n", (valid_random_digits_num2 == 0) ? static_cast<size_t>(1) : valid_random_digits_num2 );
 	result.AppendFormat( L"\t\t\"Number Of SubCases\":%zu,\n", respack.size() );
 
 	size_t real_bin_len  , padd_bin_len_of_block , padd_hex_len_of_block;
@@ -100,23 +99,51 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 				padd_bin_len_of_block = ( real_bin_len + 3 ) / 4;
 				padd_hex_len_of_block = (padd_bin_len_of_block +1) / 2;
 
+				result.AppendFormat( L"\t\t\t\t\"%s\":\"%zu\",\n",
+					L"digits",
+					real_bin_len
+				);
+
+
 				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
+					L"bin",
+					it->second->template toBinaryString<>( ).c_str()
+				);
+
+				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
+					L"dec",
+					it->second->template toDecimalString<>( ).c_str()
+				);
+
+				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
+					L"hex",
+					it->second->template toHexadecimalString<>( true ).c_str()
+				);
+
+
+				result.AppendFormat( L"\t\t\t\t\"%s\":{\n",
+					L"formated"
+				);
+
+
+				result.AppendFormat( L"\t\t\t\t\t\"%s\":\"%s\",\n",
 					L"bin",
 					Conv::CreateSeparatedStringWithZeroPadded( it->second->template toBinaryString<>( ),
 						4 * padd_bin_len_of_block, 4 ).c_str( )
 				);
 
-				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
+				result.AppendFormat( L"\t\t\t\t\t\"%s\":\"%s\",\n",
 					L"dec",
 					Conv::CreateCommaSeparatedString( it->second->template toDecimalString<>( ), 3 ).c_str( )
 				);
 
-				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\"\n",
+				result.AppendFormat( L"\t\t\t\t\t\"%s\":\"%s\"\n",
 					L"hex",
 					Conv::CreateSeparatedStringWithZeroPadded( it->second->template toHexadecimalString<>( true ),
 						2*padd_hex_len_of_block, 4 ).c_str( )
 				);
 
+				result.AppendFormat( L"\t\t\t\t}\n" );
 				result.AppendFormat( L"\t\t\t}" );
 
 			} else {
@@ -124,8 +151,6 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 				result.AppendFormat( L"\"(値なし)\"" );
 
 			}
-
-
 
 			auto next_it = it;
 			next_it++;
@@ -161,8 +186,6 @@ template <size_t BitSize> std::wstring runProcessHalfAndHalf( size_t numberOfSub
 	return runProcess<BitSize>( numberOfSubCases, BitSize / 2, BitSize / 2 );
 }
 
-
-
 using WStringPair = std::pair<std::wstring, std::wstring>;
 using WStringPairVector = std::vector<WStringPair>;
 
@@ -175,14 +198,13 @@ template <size_t BitSize> void runBitUnitProcess( WStringPairVector& ret, std::w
 	ret.push_back( WStringPair( title_base + L" (Dual Half Digits)", runProcessHalfAndHalf<BitSize>( numberOfSubCases ) ));
 }
 
-
 int main( ) {
 
 	// 日本語ロケールに設定
 	std::setlocale( LC_ALL, "ja-JP.UTF-8" );
 
 	WStringPairVector results;
-	size_t commonNumberOfSubCases = 2;
+	size_t commonNumberOfSubCases = 1;
 
 	if ( commonNumberOfSubCases == 0 ) {
 		wprintf( L"ビットごとに発行するサブケース数が0です。" );
@@ -194,6 +216,7 @@ int main( ) {
 	runBitUnitProcess<24>( results, L"24 bit", commonNumberOfSubCases );
 	runBitUnitProcess<32>( results, L"32 bit", commonNumberOfSubCases );
 	runBitUnitProcess<64>( results, L"64 bit", commonNumberOfSubCases );
+	runBitUnitProcess<96>( results, L"96 bit", commonNumberOfSubCases );
 	runBitUnitProcess<128>( results, L"128 bit", commonNumberOfSubCases );
 	runBitUnitProcess<256>( results, L"256 bit", commonNumberOfSubCases );
 
