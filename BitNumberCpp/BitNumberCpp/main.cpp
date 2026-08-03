@@ -49,46 +49,40 @@ int main( ) {
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
 
-	CUnsignedBitNumber32  n128;
-	size_t fs = 1;
+	CUnsignedBitNumber32 ubn1 = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB( std::string( "CE6FFFEB" ) );
+	CUnsignedBitNumber32 ubn2 = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB( std::string( "CE6FEFEB" ) );
 
-	for ( size_t offset = 0; offset < 64; offset++ ) {
-		auto info = n128.selfUpdateRandomExtend( offset, fs , CUnsignedBitNumber32::OffsetBasis::Most, false );
+	CUnsignedBitNumber32 ubn_xor = ubn1.logical_xor( ubn2 );
 
-		n128.clear( );
-		n128.rangeSet( info.offset_of_least, info.fill_bit_size );
 
-		printf( "\t%02zu : %s\n", offset, Conv::CreateSeparatedStringWithZeroPadded( n128.toBinaryString<char>( ), 32, 4 ).c_str( ) );
+	ubn_xor.selfUpdate_not( );
+	ubn_xor.selfUpdate_not( );
+
+	//	ubn_xor.raw = ubn1.raw ^ ubn2.raw;
+
+	printf( "%s\n", ubn1.toHexadecimalString( ).c_str( ) );
+	printf( "%s\n", ubn2.toHexadecimalString( ).c_str( ) );
+	printf( "%s\n", (ubn_xor << 4).toHexadecimalString( ).c_str( ) );
+	
+
+	CUnsignedBitNumber32 ubn3 = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB( std::string( "1" ) );
+
+
+	for ( size_t i = 0; i < 32; i++ ) {
+		printf( "ubn3 << %02zu  = %s\n" , i,  Conv::CreateSeparatedStringWithZeroPadded( (ubn3 << i).toBinaryString( ) , 32 , 4).c_str( ) ); 
 	}
+
 	printf( "\n" );
-	for ( size_t offset = 0; offset < 64; offset++ ) {
-		auto info = n128.selfUpdateRandomExtend( offset, fs , CUnsignedBitNumber32::OffsetBasis::Least, false );
+	printf( "\n" );
 
-		n128.clear( );
-		n128.rangeSet( info.offset_of_least, info.fill_bit_size );
+	CUnsignedBitNumber32 ubn4;
 
-		printf( "\t%02zu : %s\n", offset ,Conv::CreateSeparatedStringWithZeroPadded( n128.toBinaryString<char>( ), 32, 4 ).c_str());
+	ubn4.set( 31 );
 
+
+	for ( size_t i = 0; i < 32; i++ ) {
+		printf( "ubn4 >> %02zu  = %s\n", i, Conv::CreateSeparatedStringWithZeroPadded( ( ubn4 >> i ).toBinaryString( ), 32, 4 ).c_str( ) );
 	}
-
-
-	CUnsignedBitNumber32  r32;
-
-	r32.selfUpdateRandomExtend( 0, 8, CUnsignedBitNumber32::OffsetBasis::Least );
-	r32.selfUpdateRandomExtend( 8, 8, CUnsignedBitNumber32::OffsetBasis::Most, true );
-
-
-	printf( "%08X\n",
-		r32.toUInt32( )
-	);
-
-	r32.selfUpdateRandomExtend( 0, 8, CUnsignedBitNumber32::OffsetBasis::Least );
-	r32.selfUpdateRandomExtend( 8, 8, CUnsignedBitNumber32::OffsetBasis::Most, true );
-
-
-	printf( "%08X\n",
-		r32.toUInt32( )
-	);
 
 
 	return 0;

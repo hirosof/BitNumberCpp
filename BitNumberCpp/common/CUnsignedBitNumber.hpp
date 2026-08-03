@@ -687,6 +687,120 @@ public:
 
 
 	/*
+		論理演算系
+	*/
+
+	
+	CUnsignedBitNumber logical_and ( const CUnsignedBitNumber& value ) const {
+		return CUnsignedBitNumber( this->raw & value.raw );
+	}
+
+	CUnsignedBitNumber logical_or ( const CUnsignedBitNumber & value ) const {
+		return CUnsignedBitNumber( this->raw | value.raw );
+	}
+
+	CUnsignedBitNumber logical_not ( void ) const {
+		return CUnsignedBitNumber( ~this->raw );
+	}
+
+	CUnsignedBitNumber logical_xor ( const CUnsignedBitNumber & value ) const {
+		return CUnsignedBitNumber( this->raw ^ value.raw );
+	}
+
+
+	CUnsignedBitNumber  selfUpdate_and( const CUnsignedBitNumber& value ) {
+		*this = this->logical_and( value );
+		return *this;
+	}
+
+	CUnsignedBitNumber  selfUpdate_or( const CUnsignedBitNumber& value ) {
+		*this = this->logical_or( value );
+		return *this;
+	}
+
+	CUnsignedBitNumber  selfUpdate_not(  ) {
+		*this = this->logical_not( );
+		return *this;
+	}
+
+	CUnsignedBitNumber  selfUpdate_xor( const CUnsignedBitNumber& value ) {
+		*this = this->logical_xor( value );
+		return *this;
+	}
+
+
+	CUnsignedBitNumber& operator&=( const CUnsignedBitNumber& rhs ) {
+		return selfUpdate_and( rhs );
+	}
+
+	CUnsignedBitNumber& operator|=( const CUnsignedBitNumber& rhs ) {
+		return selfUpdate_or( rhs );
+	}
+
+	CUnsignedBitNumber& operator^=( const CUnsignedBitNumber& rhs ) {
+		return selfUpdate_xor( rhs );
+	}
+
+
+	CUnsignedBitNumber operator~( ) const {
+		return logical_not( );
+	}
+
+	CUnsignedBitNumber operator&( const CUnsignedBitNumber& rhs ) const {
+		return logical_and( rhs );
+	}
+
+	CUnsignedBitNumber operator|( const CUnsignedBitNumber& rhs ) const {
+		return logical_or( rhs );
+	}
+
+	CUnsignedBitNumber operator^( const CUnsignedBitNumber& rhs ) const {
+		return logical_xor( rhs );
+	}
+
+
+	/*
+		シフト演算
+	*/
+
+	CUnsignedBitNumber shiftLeft( size_t shift ) const{
+		return CUnsignedBitNumber( this->raw << shift );	
+	}
+
+	CUnsignedBitNumber shiftRight( size_t shift ) const{
+		return CUnsignedBitNumber( this->raw >> shift );
+	}
+
+	CUnsignedBitNumber selfUpdateShiftLeft( size_t shift ) {
+		this->raw <<= shift;
+		return *this;
+	}
+
+	CUnsignedBitNumber selfUpdateShiftRight( size_t shift ) {
+		this->raw >>= shift;
+		return *this;
+	}
+
+
+	CUnsignedBitNumber operator<<( size_t shift ) const {
+		return this->shiftLeft( shift );
+	}
+
+	CUnsignedBitNumber operator>>( size_t shift ) const {
+		return this->shiftRight( shift );
+	}
+
+	CUnsignedBitNumber& operator<<=( size_t shift ) {
+		this->selfUpdateShiftLeft( shift );
+		return *this;
+	}
+
+	CUnsignedBitNumber& operator>>=( size_t shift ) {
+		this->selfUpdateShiftRight( shift );
+		return *this;
+	}
+
+	/*
 		文字列への変換系
 	*/
 	template <typename CharT = DefaultCharType> using StringConv = CStdBitsetUnsignedStringConversion<CharT>;
