@@ -28,6 +28,7 @@ public:
 
 	using OperationForInvalidCharDetected = CBitsetStringConvSupport::OperationForInvalidCharDetected;
 	using ParseProcessedInfo = CBitsetStringConvSupport::ParseProcessedInfo<CharT>;
+	using ZeroPaddingMode = CBitsetStringConvSupport::ZeroPaddingMode;
 
 
 	template<size_t BitSize> class ParseResult {
@@ -41,10 +42,34 @@ public:
 
 
 
-	template<size_t BitSize>	static String ToBinaryString( StdBitsetConstRef<BitSize> bin ) {
+	template<size_t BitSize>	static String ToBinaryString( StdBitsetConstRef<BitSize> bin , ZeroPaddingMode zero_padding_mode = ZeroPaddingMode::NoPadding) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
-		size_t msb_pos = CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( bin ) - 1;
+		size_t msb_pos;
 		String result_string;
+
+		size_t padding_size = 0;
+
+		switch ( zero_padding_mode ) {
+			case ZeroPaddingMode::NoPadding:
+				msb_pos = CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( bin ) - 1;
+				break;
+			case ZeroPaddingMode::ContainerBitsPadding:
+				msb_pos = BitSize - 1;
+				break;
+			case ZeroPaddingMode::EightBitsPadding:
+				msb_pos = CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( bin ) - 1;
+				padding_size = ( 8 - ( msb_pos + 1 ) % 8 ) % 8;
+				break;
+			case ZeroPaddingMode::ContainerAndEightBitsPadding:
+				msb_pos = BitSize - 1;
+				padding_size = ( 8 - ( msb_pos + 1 ) % 8 ) % 8;
+				break;
+		} 
+
+		if ( padding_size > 0 ) {
+			result_string.append( padding_size, '0' );
+		}
+
 		for ( size_t i = 0; i <= msb_pos; i++ ) {
 			result_string.push_back( ( bin[msb_pos - i] ) ? '1' : '0' );
 		}
@@ -256,11 +281,11 @@ public:
 	}
 
 
-	template<size_t BitSize>	static String ToHexadecimalString( StdBitsetConstRef<BitSize> bin, bool upper_case = false ) {
+	template<size_t BitSize>	static String ToHexadecimalString( StdBitsetConstRef<BitSize> bin, bool upper_case = false , ZeroPaddingMode zero_padding_mode = ZeroPaddingMode::NoPadding ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		if ( BitSize < 4 ) {
 			StdBitset<4> bs( bin.to_ulong( ) );
-			return  ToHexadecimalString( bs, upper_case );
+			return  ToHexadecimalString( bs, upper_case  , zero_padding_mode);
 		}
 		String result_string;
 		StdBitset<BitSize> auxiliary( bin );
@@ -272,6 +297,29 @@ public:
 			if ( current_digit_value < 10 ) result_string.push_back( '0' + current_digit_value );
 			else result_string.push_back( ( ( upper_case ) ? 'A' : 'a' ) + ( current_digit_value - 10 ) );
 		} while ( auxiliary.none( ) == false );
+		
+		if ( zero_padding_mode != ZeroPaddingMode::NoPadding ) {
+
+			size_t padding_size = 0;
+
+			if ( zero_padding_mode == ZeroPaddingMode::EightBitsPadding ) {
+				if ( result_string.length( ) % 2 != 0 ) {
+					padding_size = 1;
+				}
+			} else if ( zero_padding_mode == ZeroPaddingMode::ContainerBitsPadding ) {
+				padding_size = ( ( BitSize + 3 ) / 4 ) - result_string.length( );
+			} else if ( zero_padding_mode == ZeroPaddingMode::ContainerAndEightBitsPadding ) {
+				padding_size = ( ( BitSize + 3 ) / 4 );
+				if ( padding_size % 2 ) padding_size++;				
+				padding_size -= result_string.length( );
+			}
+
+
+			if ( padding_size > 0 ) {
+				result_string.append( padding_size, '0' );
+			}
+
+		}
 
 		std::reverse( result_string.begin( ), result_string.end( ) );
 		return result_string;

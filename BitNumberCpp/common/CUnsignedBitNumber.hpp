@@ -16,6 +16,8 @@
 
 #include "CStdBitsetUnsignedOperation.hpp"
 #include "CStdBitsetUnsignedStringConversion.hpp"
+#include "CBitNumberSupport.hpp"
+
 
 template<size_t BitSize, typename DefaultCharType = char> class CUnsignedBitNumber {
 public:
@@ -29,13 +31,8 @@ public:
 	using SelfPair = std::pair<CUnsignedBitNumber, CUnsignedBitNumber>;
 	using SelfPairOptional = std::optional<SelfPair>;
 
-	enum struct OffsetBasis {
-		Least = 0,		// 最下位ビット基準
-		Most,				// 最上位ビット基準
-		LSB = Least,	// 最下位ビット基準 (Leastの別名)
-		MSB = Most		// 最上位ビット基準 (Mostの別名)
-	};
 
+	using OffsetBasis = CBitNumberSupport::BitOffsetBasis;
 
 	// rawは全ビットが符号ビット等の状態を示すビットがない純粋な数値データであり、
 	// 外部から変更されても、本クラスの動作に影響しないため、公開範囲はpublicで問題ない

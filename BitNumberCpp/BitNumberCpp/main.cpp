@@ -4,7 +4,8 @@
 #include <vector>
 #include<random>
 #include "../common/CUnsignedBitNumber.hpp"
-
+#include "../common/CStdBitsetUnsignedNumber.hpp"
+#include "../common/CBitNumberSupport.hpp"
 /*
 enum struct NumberType {
 	Binary = 0,
@@ -49,40 +50,42 @@ int main( ) {
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
 
-	CUnsignedBitNumber32 ubn1 = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB( std::string( "CE6FFFEB" ) );
-	CUnsignedBitNumber32 ubn2 = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB( std::string( "CE6FEFEB" ) );
+	CStdBitsetUnsignedNumber<64> n1;
+	CStdBitsetUnsignedNumber<32> n2;	
 
-	CUnsignedBitNumber32 ubn_xor = ubn1.logical_xor( ubn2 );
+	/*
+	n1.getStdBitsetRef( ) = CStdBitsetUnsignedOperation::Random<64>( );
 
+	CBitNumberSupport::BitOffsetBasis basis = CBitNumberSupport::BitOffsetBasis::Most;
 
-	ubn_xor.selfUpdate_not( );
-	ubn_xor.selfUpdate_not( );
+	for ( size_t i = 0; i < 16; i++ ) {
+		for ( size_t j = 0; j < 16; j++ ) {
+			auto ret = CBitNumberSupport::AdjustOffsetRange( 16, i, j + 1,basis );
 
-	//	ubn_xor.raw = ubn1.raw ^ ubn2.raw;
+			if ( ret.has_value( ) ) {
+				printf( "%zu %zu %s => %zu %zu %s\n",  i , j +1, ( basis == CBitNumberSupport::BitOffsetBasis::Least ) ? "Least" : "Most",
+					ret->offset, ret->size, ( ret->basis == CBitNumberSupport::BitOffsetBasis::Least ) ? "Least" : "Most" );
+			}
+		}
 
-	printf( "%s\n", ubn1.toHexadecimalString( ).c_str( ) );
-	printf( "%s\n", ubn2.toHexadecimalString( ).c_str( ) );
-	printf( "%s\n", (ubn_xor << 4).toHexadecimalString( ).c_str( ) );
-	
-
-	CUnsignedBitNumber32 ubn3 = CUnsignedBitNumber32::CreateFromHexadecimalStringPriorityLSB( std::string( "1" ) );
-
-
-	for ( size_t i = 0; i < 32; i++ ) {
-		printf( "ubn3 << %02zu  = %s\n" , i,  Conv::CreateSeparatedStringWithZeroPadded( (ubn3 << i).toBinaryString( ) , 32 , 4).c_str( ) ); 
+		printf( "\n" );
 	}
-
-	printf( "\n" );
-	printf( "\n" );
-
-	CUnsignedBitNumber32 ubn4;
-
-	ubn4.set( 31 );
+	*/
 
 
-	for ( size_t i = 0; i < 32; i++ ) {
-		printf( "ubn4 >> %02zu  = %s\n", i, Conv::CreateSeparatedStringWithZeroPadded( ( ubn4 >> i ).toBinaryString( ), 32, 4 ).c_str( ) );
-	}
+	n2.fromUInt16ToMost( 0x2a1b );
+
+	n1.fromCast( n2, 4, 0, CBitNumberSupport::BitOffsetBasis::Most);
+
+
+	printf( "n2(No Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::NoPadding ).c_str( ) );
+	printf( "n2(Eight Bits Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::EightBitsPadding ).c_str( ) );
+	printf( "n2(Container Bits Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::ContainerBitsPadding ).c_str( ) );
+	printf( "n2(Container And Eight Bits Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( ) );
+
+	printf( "%u %x\n", n1.toUInt8(8 , CBitNumberSupport::BitOffsetBasis::Most ),
+		n1.toUInt8( 8, CBitNumberSupport::BitOffsetBasis::Most ) );
+
 
 
 	return 0;

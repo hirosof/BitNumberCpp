@@ -296,6 +296,8 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\CBitNumberSupport.hpp" />
+    <ClInclude Include="..\common\CStdBitsetUnsignedNumber.hpp" />
     <ClInclude Include="..\common\CStdBitsetUnsignedOperation.hpp" />
     <ClInclude Include="..\common\CStdBitsetUnsignedStringConversion.hpp" />
     <ClInclude Include="..\common\CUnsignedBitNumber.hpp" />

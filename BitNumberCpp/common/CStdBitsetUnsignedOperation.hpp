@@ -12,6 +12,7 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 #include <algorithm>
 #include <utility>
 #include <random>
+#include "CBitNumberSupport.hpp"
 
 class CStdBitsetUnsignedOperation {
 public:
@@ -24,11 +25,7 @@ public:
 	template <size_t BitSize> using OptionalStdBitset = std::optional<StdBitset<BitSize>>;
 	template <size_t BitSize> using OptionalStdBitsetPair = std::optional<StdBitsetPair<BitSize>>;
 
-	enum struct CompareResult {
-		LeftGreater = 0,
-		Equal,
-		RightGreater
-	};
+	using CompareResult = CBitNumberSupport::CompareResult;
 
 	template< size_t ToBitSize, size_t FromBitSize>  static StdBitset<ToBitSize> CastSize( StdBitsetConstRef<FromBitSize> input ) {
 		static_assert( FromBitSize > 0, "FromBitSizeは無効な値です。" );
@@ -330,6 +327,4 @@ public:
 		return result;
 	}
 
-
 };
-

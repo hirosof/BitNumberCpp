@@ -47,5 +47,20 @@ public:
 		ParseProcessedInfo( ) : countOfInvalidChars( 0 ), invalidCharMap( ), processLength( ) {}
 	};
 
+	enum struct ZeroPaddingMode {
+
+		// パディングなし
+		NoPadding = 0,
+
+		// コンテナのビット数に合わせてパディング
+		ContainerBitsPadding,
+		
+		// 8ビット単位に合わせてパディング
+		EightBitsPadding,	
+	
+		// コンテナのビット数と8ビット単位の両方に合わせてパディング
+		ContainerAndEightBitsPadding
+
+	};
 
 };
