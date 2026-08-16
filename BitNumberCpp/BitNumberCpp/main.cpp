@@ -1,3 +1,8 @@
+/*
+	このファイルは動作チェック用のコードです。
+*/
+
+
 #define NOMINMAX
 #include <windows.h>
 #include <locale>
@@ -38,6 +43,19 @@ template <size_t BitSize>  void arithmeticSample( const std::string number1Strin
 
 */
 
+template<size_t BitSize, typename CharType = char> void DumpStdBitsetUnsignedNumber( const CStdBitsetUnsignedNumber<BitSize, CharType>& number  , bool afterNewLine = false) {
+
+	using Conv = CStdBitsetUnsignedStringConversion<char>;
+	printf( "%s (0x%s)" ,
+		Conv::ToBinaryString( number.getStdBitsetRefConst( ), Conv::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( ),
+		Conv::ToHexadecimalString( number.getStdBitsetRefConst( ), true ,  Conv::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( )	
+	);
+
+	if ( afterNewLine ) {
+		printf( "\n" );
+	}
+
+}
 
 int main( ) {
 
@@ -50,41 +68,21 @@ int main( ) {
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
 
-	CStdBitsetUnsignedNumber<64> n1;
-	CStdBitsetUnsignedNumber<32> n2;	
+	CStdBitsetUnsignedNumber<16> n1;
+	CStdBitsetUnsignedNumber<8> n2;	
 
-	/*
-	n1.getStdBitsetRef( ) = CStdBitsetUnsignedOperation::Random<64>( );
+	n2.fromUInt8( 0xAB );
 
-	CBitNumberSupport::BitOffsetBasis basis = CBitNumberSupport::BitOffsetBasis::Most;
-
-	for ( size_t i = 0; i < 16; i++ ) {
-		for ( size_t j = 0; j < 16; j++ ) {
-			auto ret = CBitNumberSupport::AdjustOffsetRange( 16, i, j + 1,basis );
-
-			if ( ret.has_value( ) ) {
-				printf( "%zu %zu %s => %zu %zu %s\n",  i , j +1, ( basis == CBitNumberSupport::BitOffsetBasis::Least ) ? "Least" : "Most",
-					ret->offset, ret->size, ( ret->basis == CBitNumberSupport::BitOffsetBasis::Least ) ? "Least" : "Most" );
-			}
+	DumpStdBitsetUnsignedNumber( n2, true );	
+	printf( "\n" ); 
+	for ( size_t from_offset = 0; from_offset < 8; from_offset++ ) {
+		for ( size_t to_offset = 0; to_offset < 16; to_offset++ ) {
+			n1.fromCast( n2, to_offset, from_offset, CBitNumberSupport::BitOffsetBasis::Most );
+			printf("fromCast to_offset: %zu, from_offset: %zu, n1: ", to_offset, from_offset );
+			DumpStdBitsetUnsignedNumber( n1, true );
 		}
-
 		printf( "\n" );
 	}
-	*/
-
-
-	n2.fromUInt16ToMost( 0x2a1b );
-
-	n1.fromCast( n2, 4, 0, CBitNumberSupport::BitOffsetBasis::Most);
-
-
-	printf( "n2(No Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::NoPadding ).c_str( ) );
-	printf( "n2(Eight Bits Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::EightBitsPadding ).c_str( ) );
-	printf( "n2(Container Bits Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::ContainerBitsPadding ).c_str( ) );
-	printf( "n2(Container And Eight Bits Padding): %s\n", Conv::ToHexadecimalString( n1.getStdBitsetRefConst( ), false, Conv::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( ) );
-
-	printf( "%u %x\n", n1.toUInt8(8 , CBitNumberSupport::BitOffsetBasis::Most ),
-		n1.toUInt8( 8, CBitNumberSupport::BitOffsetBasis::Most ) );
 
 
 

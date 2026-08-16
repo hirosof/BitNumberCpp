@@ -200,8 +200,8 @@ public:
 			return std::pair( StdBitset<BitSize>( 0 ), input_a );
 		}
 
-		const size_t digit_ia = GetNumberOfDigitsForDisplay( input_a );
-		const size_t digit_ib = GetNumberOfDigitsForDisplay( input_b );
+		const size_t digit_ia = GetSignificantBitLength( input_a );
+		const size_t digit_ib = GetSignificantBitLength( input_b );
 		const size_t digit_ox = digit_ia - digit_ib + 1;
 
 
@@ -231,7 +231,7 @@ public:
 	}
 
 
-	template<size_t BitSize>  static size_t GetNumberOfDigitsForDisplay( StdBitsetConstRef<BitSize> input ) {
+	template<size_t BitSize>  static size_t GetSignificantBitLength( StdBitsetConstRef<BitSize> input ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 		for ( size_t i = BitSize - 1; i > 0; i-- ) {
 			if ( input[i] ) return i + 1;
@@ -325,6 +325,21 @@ public:
 		}
 
 		return result;
+	}
+
+
+	template<size_t BitSize>  static  StdBitset<BitSize> RotateLeft( StdBitsetConstRef<BitSize> input, size_t rotate_bit_size ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		if ( rotate_bit_size == 0 ) return input;
+		rotate_bit_size %= BitSize;
+		return ( input << rotate_bit_size ) | ( input >> ( BitSize - rotate_bit_size ) );
+	}
+
+	template<size_t BitSize>  static  StdBitset<BitSize> RotateRight( StdBitsetConstRef<BitSize> input, size_t rotate_bit_size ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		if ( rotate_bit_size == 0 ) return input;
+		rotate_bit_size %= BitSize;
+		return ( input >> rotate_bit_size ) | ( input << ( BitSize - rotate_bit_size ) );
 	}
 
 };

@@ -585,11 +585,12 @@ public:
 		return std::nullopt;
 	}
 
+
 	/*
-		2進数として文字列化した際の表示文字列の長さを取得
+		有効ビット長の取得
 	*/
-	size_t getNumberOfBinaryDigitsForDisplay( void )const {
-		return CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( this->raw );
+	size_t getSignificantBitLength( void )const {
+		return CStdBitsetUnsignedOperation::GetSignificantBitLength( this->raw );
 	}
 
 

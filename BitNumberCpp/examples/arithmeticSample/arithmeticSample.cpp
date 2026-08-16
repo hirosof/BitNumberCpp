@@ -95,7 +95,7 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 			if ( it->second.has_value( ) ) {
 				result.AppendFormat( L"{\n" );
 
-				real_bin_len = it->second->getNumberOfBinaryDigitsForDisplay( );
+				real_bin_len = it->second->getSignificantBitLength( );
 				padd_bin_len_of_block = ( real_bin_len + 3 ) / 4;
 				padd_hex_len_of_block = (padd_bin_len_of_block +1) / 2;
 

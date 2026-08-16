@@ -51,13 +51,13 @@ public:
 
 		switch ( zero_padding_mode ) {
 			case ZeroPaddingMode::NoPadding:
-				msb_pos = CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( bin ) - 1;
+				msb_pos = CStdBitsetUnsignedOperation::GetSignificantBitLength( bin ) - 1;
 				break;
 			case ZeroPaddingMode::ContainerBitsPadding:
 				msb_pos = BitSize - 1;
 				break;
 			case ZeroPaddingMode::EightBitsPadding:
-				msb_pos = CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( bin ) - 1;
+				msb_pos = CStdBitsetUnsignedOperation::GetSignificantBitLength( bin ) - 1;
 				padding_size = ( 8 - ( msb_pos + 1 ) % 8 ) % 8;
 				break;
 			case ZeroPaddingMode::ContainerAndEightBitsPadding:

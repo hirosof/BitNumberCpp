@@ -62,6 +62,19 @@ public:
 		BitOffsetTwoPointRange( size_t offset1, size_t offset2, BitOffsetBasis basis = BitOffsetBasis::Least ) : offset1( offset1 ), offset2( offset2 ), basis( basis ) {}
 	};
 
+
+	struct RealRangeForRandomIssue {
+		size_t offset_of_least;
+		size_t fill_bit_size;
+		RealRangeForRandomIssue( ) : offset_of_least( 0 ), fill_bit_size( 0 ) {}
+	};
+
+	template<typename ValueType> struct RandomIssueResult {
+		ValueType value;
+		RealRangeForRandomIssue realRange;
+		RandomIssueResult( ) : value(), realRange( ) {}
+	};
+
 	/*
 		インデックス検証・クリップ関数
 	*/
@@ -161,8 +174,7 @@ public:
 	static BitOffsetTwoPointRange AdjustOffsetTwoPointRange( size_t bit_size, size_t offset1, size_t offset2, BitOffsetBasis basis = BitOffsetBasis::Least ) {
 		BitOffsetTwoPointRange range = ClipOffsetTwoPointRange( bit_size, offset1, offset2, BitOffsetBasis::Least );
 		if ( basis == BitOffsetBasis::Most ) {
-			range.offset2 = bit_size - 1 - range.offset1;
-			range.offset1 = bit_size - 1 - range.offset2;
+			return BitOffsetTwoPointRange( bit_size - 1 - range.offset2, bit_size - 1 - range.offset1, BitOffsetBasis::Least );
 		} 
 		return range;
 	}

@@ -14,6 +14,10 @@
 #include <compare>
 #include <string>
 
+#ifdef _DEBUG
+#include <cstdio>
+#endif
+
 #include "CStdBitsetUnsignedOperation.hpp"
 #include "CStdBitsetUnsignedStringConversion.hpp"
 #include "CBitNumberSupport.hpp"
@@ -36,9 +40,14 @@ public:
 	using BitOffsetTwoPointRange = CBitNumberSupport::BitOffsetTwoPointRange;
 	using BitOffsetRange = CBitNumberSupport::BitOffsetRange;
 
+
 	using String = std::basic_string<CharType>;
 
 	using CompareResult = CBitNumberSupport::CompareResult;
+
+	using RealRangeForRandomIssue = CBitNumberSupport::RealRangeForRandomIssue;
+	using RandomIssueResult = CBitNumberSupport::RandomIssueResult<CStdBitsetUnsignedNumber>;
+	using ZeroPaddingMode = CStdBitsetUnsignedStringConversion<CharType>::ZeroPaddingMode;
 
 
 private:
@@ -159,6 +168,8 @@ public:
 		return m_raw[index];
 	}
 
+
+	// 指定された位置から最上位ビットまでの値をクリアする (0にする)
 	bool clear( size_t start_index = 0  , OffsetBasis basis = OffsetBasis::Least ) {
 		if(!CBitNumberSupport::IsValidIndex<BitSize>(start_index ) ) return false;
 
@@ -168,6 +179,7 @@ public:
 	}
 
 
+	// 指定された位置から最上位ビットまでの値をセットする (1にする)
 	bool fill( size_t start_index = 0 , OffsetBasis basis = OffsetBasis::Least ) {
 		if(!CBitNumberSupport::IsValidIndex<BitSize>(start_index ) ) return false;
 
@@ -192,18 +204,14 @@ public:
 		return extract( offset, size, OffsetBasis::Least, extracted_bit_location );
 	}
 
-	template<typename T> CStdBitsetUnsignedNumber extract( size_t offset ) {
-		return extract<T>( offset, ExtractedBitLocation::LeastSignificant );
+	template<typename T> CStdBitsetUnsignedNumber extractType( size_t offset, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
+		return extract( offset, sizeof( T ) * 8, OffsetBasis::Least, extracted_bit_location );
 	}
-	
-	template<typename T> CStdBitsetUnsignedNumber extract( size_t offset, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
-		return extract<T>( offset, sizeof( T ) * 8, OffsetBasis::Least, extracted_bit_location );
-	}
-	template<typename T> CStdBitsetUnsignedNumber extract( size_t offset, OffsetBasis basis = OffsetBasis::Least , ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
+	template<typename T> CStdBitsetUnsignedNumber extractType( size_t offset, OffsetBasis basis , ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
 		return extract( offset, sizeof( T ) * 8, basis, extracted_bit_location );
 	}
 
-	CStdBitsetUnsignedNumber extract( size_t offset, size_t size, OffsetBasis basis = OffsetBasis::Least, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
+	CStdBitsetUnsignedNumber extract( size_t offset, size_t size, OffsetBasis basis, ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
 
 		std::optional<BitOffsetRange> range = CBitNumberSupport::AdjustOffsetRange( BitSize, offset, size, basis );
 
@@ -238,7 +246,7 @@ public:
 		return extractIndex( index1, index2, OffsetBasis::Least, extracted_bit_location );
 	}
 
-	CStdBitsetUnsignedNumber extractIndex( size_t index1, size_t index2, OffsetBasis basis = OffsetBasis::Least ,ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
+	CStdBitsetUnsignedNumber extractIndex( size_t index1, size_t index2, OffsetBasis basis ,ExtractedBitLocation extracted_bit_location = ExtractedBitLocation::LeastSignificant ) const {
 
 
 		if ( !( CBitNumberSupport::IsValidIndex<BitSize>( index1 ) || CBitNumberSupport::IsValidIndex<BitSize>( index2 ) ) ) {
@@ -279,7 +287,7 @@ private:
 			return 0;
 		}
 
-		CStdBitsetUnsignedNumber extracted_value = extract<UIntTypeName>( offset_bit_number, basis, ExtractedBitLocation::LeastSignificant );
+		CStdBitsetUnsignedNumber extracted_value = extractType<UIntTypeName>( offset_bit_number, basis, ExtractedBitLocation::LeastSignificant );
 
 		UIntTypeName result = 0;
 
@@ -398,20 +406,63 @@ private:
 public:
 
 	template <size_t FromSize, typename FromCharType = CharType> void fromCast( const  CStdBitsetUnsignedNumber<FromSize, FromCharType>& from, size_t self_offset_bit_number = 0, size_t from_offset_bit_number = 0 , OffsetBasis basis = OffsetBasis::Least ) {
-		this->m_raw = CStdBitsetUnsignedOperation::CastSize<BitSize>( from.extract( from_offset_bit_number , BitSize , basis).getStdBitsetRefConst() );
-		if ( basis == OffsetBasis::Least ) {
-			if ( self_offset_bit_number > 0 ) this->m_raw <<= self_offset_bit_number;
-		} else {
-			this->m_raw <<= ( BitSize - self_offset_bit_number - std::min( BitSize, FromSize ) );
+		
+		std::optional<BitOffsetRange> from_range = CBitNumberSupport::AdjustOffsetRange( FromSize, from_offset_bit_number, BitSize , basis );
+
+		if ( !from_range.has_value( ) ) {
+			this->m_raw.reset( );
+			return;
 		}
+
+		if ( from_range->size == 0 ) {
+			this->m_raw.reset( );
+			return;
+		}
+
+	
+		std::optional<BitOffsetRange> self_range = CBitNumberSupport::AdjustOffsetRange( BitSize, self_offset_bit_number, from_range->size , basis );
+
+		if ( !self_range.has_value( ) ) {
+			this->m_raw.reset( );
+			return;
+		}
+
+		if ( self_range->size == 0 ) {
+			this->m_raw.reset( );
+			return;
+		}
+	
+		if ( self_range->size < from_range->size ) {
+			// コピー先のサイズがコピー元より小さい場合、コピー元を再計算する
+			from_range = CBitNumberSupport::AdjustOffsetRange( FromSize, from_offset_bit_number, self_range->size, basis );
+
+
+			// 以下2点のチェックは先のチェックしている影響で真にはならないが、念のために残しておく
+			if ( !from_range.has_value( ) ) {
+				this->m_raw.reset( );
+				return;
+			}
+
+			if ( from_range->size == 0 ) {
+				this->m_raw.reset( );
+				return;
+			}
+		}
+
+
+		this->m_raw = CStdBitsetUnsignedOperation::CastSize<BitSize>( from.extract(from_range.value() , ExtractedBitLocation::LeastSignificant ).getStdBitsetRefConst( ) );
+		this->m_raw <<= self_range->offset;
+
 	}
 
 	template <size_t FromSize> void fromSizeCast( const  CStdBitsetUnsignedNumber<FromSize, CharType>& from, size_t self_offset_bit_number = 0, size_t from_offset_bit_number = 0 , OffsetBasis basis = OffsetBasis::Least ) {
-		return fromCast<FromSize, CharType>( from, self_offset_bit_number, from_offset_bit_number, basis );
+		 fromCast<FromSize, CharType>( from, self_offset_bit_number, from_offset_bit_number, basis );
+		 return;
 	}
 
 	template <typename FromCharType> void fromCharCast( const  CStdBitsetUnsignedNumber<BitSize, FromCharType>& from, size_t self_offset_bit_number = 0, size_t from_offset_bit_number = 0 , OffsetBasis basis = OffsetBasis::Least ) {
-		return fromCast<BitSize, FromCharType>( from, self_offset_bit_number, from_offset_bit_number, basis );
+		fromCast<BitSize, FromCharType>( from, self_offset_bit_number, from_offset_bit_number, basis );
+		return;
 	}
 
 
@@ -466,8 +517,506 @@ public:
 
 public:
 
-	size_t getNumberOfActualBits( ) const {
-		return CStdBitsetUnsignedOperation::GetNumberOfDigitsForDisplay( m_raw );
+	// 有効なビット長を取得する
+	size_t getSignificantBitLength( ) const {
+		return CStdBitsetUnsignedOperation::GetSignificantBitLength( m_raw );
 	}
+
+
+	CompareResult compare( const CStdBitsetUnsignedNumber& target ) const {
+		return CStdBitsetUnsignedOperation::Compare( m_raw, target.m_raw );
+	}
+
+	template <size_t TargetSize, typename TargetCharType = CharType> CompareResult compareExtend( const CStdBitsetUnsignedNumber<TargetSize, TargetCharType>& target ) const {
+		return CStdBitsetUnsignedOperation::CompareExtend( m_raw, target.getStdBitsetRefConst() );
+	}
+
+
+	bool equal( const CStdBitsetUnsignedNumber& target ) const {
+		return compare( target ) == CompareResult::Equal;
+	}
+
+	template <size_t TargetSize, typename TargetCharType = CharType> bool equalExtend( const CStdBitsetUnsignedNumber<TargetSize, TargetCharType>& target ) const {
+		return compareExtend( target ) == CompareResult::Equal;
+	}
+
+	std::strong_ordering operator <=> ( const CStdBitsetUnsignedNumber& rhs ) const {
+
+		CompareResult cr = compare( rhs );
+
+		if ( cr == CompareResult::SelfGreater ) {
+			return std::strong_ordering::greater;
+		} else if ( cr == CompareResult::TargetGreater ) {
+			return std::strong_ordering::less;
+		} else {
+			return std::strong_ordering::equal;
+		}
+
+	}
+
+	bool  operator== ( const CStdBitsetUnsignedNumber& rhs ) const {
+		return equal( rhs );
+	}
+
+
+	/*
+	 大きい方のCStdBitsetUnsignedNumberを返すスタティック関数
+	*/
+
+	static CStdBitsetUnsignedNumber Max( const CStdBitsetUnsignedNumber& a, const CStdBitsetUnsignedNumber& b ) {
+		return ( a >= b ) ? a : b;
+	}
+
+	/*
+	 小さい方のCStdBitsetUnsignedNumberを返すスタティック関数
+	*/
+	static CStdBitsetUnsignedNumber Min( const CStdBitsetUnsignedNumber& a, const CStdBitsetUnsignedNumber& b ) {
+		return ( a <= b ) ? a : b;
+	}
+
+
+	/*
+	論理演算系
+*/
+
+	CStdBitsetUnsignedNumber logical_and( const CStdBitsetUnsignedNumber& value ) const {
+		return CStdBitsetUnsignedNumber( m_raw & value.m_raw );
+	}
+
+	CStdBitsetUnsignedNumber logical_or( const CStdBitsetUnsignedNumber& value ) const {
+		return CStdBitsetUnsignedNumber( m_raw | value.m_raw );
+	}
+
+
+	CStdBitsetUnsignedNumber logical_not( void ) const {
+		return CStdBitsetUnsignedNumber( ~this->m_raw );
+	}
+
+	CStdBitsetUnsignedNumber logical_xor( const CStdBitsetUnsignedNumber& value ) const {
+		return CStdBitsetUnsignedNumber( this->m_raw ^ value.m_raw );
+	}
+
+
+	CStdBitsetUnsignedNumber  selfUpdate_and( const CStdBitsetUnsignedNumber& value ) {
+		*this = this->logical_and( value );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber  selfUpdate_or( const CStdBitsetUnsignedNumber& value ) {
+		*this = this->logical_or( value );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber  selfUpdate_not( ) {
+		*this = this->logical_not( );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber  selfUpdate_xor( const CStdBitsetUnsignedNumber& value ) {
+		*this = this->logical_xor( value );
+		return *this;
+	}
+
+
+	CStdBitsetUnsignedNumber& operator&=( const CStdBitsetUnsignedNumber& rhs ) {
+		selfUpdate_and( rhs );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber& operator|=( const CStdBitsetUnsignedNumber	& rhs ) {
+		selfUpdate_or( rhs );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber& operator^=( const CStdBitsetUnsignedNumber& rhs ) {
+		selfUpdate_xor( rhs );
+		return *this;
+	}
+
+
+	CStdBitsetUnsignedNumber operator~( ) const {
+		return logical_not( );
+	}
+
+	CStdBitsetUnsignedNumber operator&( const CStdBitsetUnsignedNumber& rhs ) const {
+		return logical_and( rhs );
+	}
+
+	CStdBitsetUnsignedNumber operator|( const CStdBitsetUnsignedNumber& rhs ) const {
+		return logical_or( rhs );
+	}
+
+	CStdBitsetUnsignedNumber operator^( const CStdBitsetUnsignedNumber& rhs ) const {
+		return logical_xor( rhs );
+	}
+
+	/*
+		シフト演算
+	*/
+
+	CStdBitsetUnsignedNumber shiftLeft( size_t shift ) const {
+		return CStdBitsetUnsignedNumber( this->m_raw << shift );
+	}
+
+	CStdBitsetUnsignedNumber shiftRight( size_t shift ) const {
+		return CStdBitsetUnsignedNumber( this->m_raw >> shift );
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateShiftLeft( size_t shift ) {
+		this->m_raw <<= shift;
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateShiftRight( size_t shift ) {
+		this->m_raw >>= shift;
+		return *this;
+	}
+
+
+	CStdBitsetUnsignedNumber operator<<( size_t shift ) const {
+		return this->shiftLeft( shift );
+	}
+
+	CStdBitsetUnsignedNumber operator>>( size_t shift ) const {
+		return this->shiftRight( shift );
+	}
+
+	CStdBitsetUnsignedNumber& operator<<=( size_t shift ) {
+		this->selfUpdateShiftLeft( shift );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber& operator>>=( size_t shift ) {
+		this->selfUpdateShiftRight( shift );
+		return *this;
+	}
+
+
+	/*
+		ローテート演算
+	*/
+
+	CStdBitsetUnsignedNumber rotateLeft( size_t rotate ) const {
+		return CStdBitsetUnsignedNumber( CStdBitsetUnsignedOperation::RotateLeft( this->m_raw, rotate ) );
+	}
+
+	CStdBitsetUnsignedNumber rotateRight( size_t rotate ) const {
+		return CStdBitsetUnsignedNumber( CStdBitsetUnsignedOperation::RotateRight( this->m_raw, rotate ) );
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateRotateLeft( size_t rotate ) {
+		this->m_raw = CStdBitsetUnsignedOperation::RotateLeft( this->m_raw, rotate );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateRotateRight( size_t rotate ) {
+		this->m_raw = CStdBitsetUnsignedOperation::RotateRight( this->m_raw, rotate );
+		return *this;
+	}
+
+
+	/*
+		加算系の実装
+	*/
+	CStdBitsetUnsignedNumber additionWithCarryParam( const CStdBitsetUnsignedNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) const {
+		auto pre_result = CStdBitsetUnsignedOperation::Addition<BitSize>( this->m_raw, value.m_raw, input_carry, pLastCarry );
+		return CStdBitsetUnsignedNumber( pre_result );
+	}
+
+
+	CStdBitsetUnsignedNumber selfUpdateAdditionWithCarryParam( const CStdBitsetUnsignedNumber& value, const bool input_carry = false, bool* const pLastCarry = nullptr ) {
+		auto pre_result = additionWithCarryParam( value, input_carry, pLastCarry );
+		this->m_raw = pre_result.m_raw;
+		return pre_result;
+	}
+
+
+	CStdBitsetUnsignedNumber addition( const CStdBitsetUnsignedNumber& value ) const {
+		return additionWithCarryParam( value, false, nullptr );
+	}
+
+
+	CStdBitsetUnsignedNumber selfUpdateAddition( const CStdBitsetUnsignedNumber& value ) {
+		auto pre_result = addition( value );
+		this->m_raw = pre_result.m_raw;
+		return pre_result;
+	}
+
+
+	CStdBitsetUnsignedNumber& operator+=( const CStdBitsetUnsignedNumber& rhs ) {
+		this->selfUpdateAddition( rhs );
+		return *this;
+	}
+
+
+	CStdBitsetUnsignedNumber operator+( const CStdBitsetUnsignedNumber& rhs ) const {
+		CStdBitsetUnsignedNumber lhs( *this );
+		lhs += rhs;
+		return lhs;
+	}
+
+
+	CStdBitsetUnsignedNumber& operator++( ) {
+		this->m_raw = CStdBitsetUnsignedOperation::Increment( this->m_raw );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber operator++( int ) {
+		CStdBitsetUnsignedNumber old( *this );
+		this->m_raw = CStdBitsetUnsignedOperation::Increment( this->m_raw );
+		return old;
+	}
+
+
+	/*
+
+		減算系の実装
+	*/
+
+	CStdBitsetUnsignedNumber subtraction( const CStdBitsetUnsignedNumber& value )const {
+		CStdBitsetUnsignedNumber result;
+		result.m_raw = CStdBitsetUnsignedOperation::Subtraction( this->m_raw, value.m_raw );
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateSubtraction( const CStdBitsetUnsignedNumber& value ) {
+		CStdBitsetUnsignedNumber result = subtraction( value );
+		this->m_raw = result.m_raw;
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber& operator-=( const CStdBitsetUnsignedNumber& rhs ) {
+		this->selfUpdateSubtraction( rhs );
+		return *this;
+	}
+
+
+
+	CStdBitsetUnsignedNumber operator-( const CStdBitsetUnsignedNumber& rhs ) const {
+		CStdBitsetUnsignedNumber lhs( *this );
+		lhs -= rhs;
+		return lhs;
+	}
+
+
+	CStdBitsetUnsignedNumber& operator--( ) {
+		this->m_raw = CStdBitsetUnsignedOperation::Decrement( this->m_raw );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber operator--( int ) {
+		CStdBitsetUnsignedNumber old( *this );
+		this->m_raw = CStdBitsetUnsignedOperation::Decrement( this->m_raw );
+		return old;
+	}
+
+
+	/*
+		掛け算
+	*/
+
+	CStdBitsetUnsignedNumber multiplication( const CStdBitsetUnsignedNumber& value ) const {
+		CStdBitsetUnsignedNumber result;
+		result.m_raw = CStdBitsetUnsignedOperation::Multiplication( this->m_raw, value.m_raw );
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateMultiplication( const CStdBitsetUnsignedNumber& value ) {
+		CStdBitsetUnsignedNumber result = multiplication( value );
+		this->m_raw = result.m_raw;
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber& operator*=( const CStdBitsetUnsignedNumber& rhs ) {
+		this->selfUpdateMultiplication( rhs );
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber operator*( const CStdBitsetUnsignedNumber& rhs ) const {
+		CStdBitsetUnsignedNumber lhs( *this );
+		lhs *= rhs;
+		return lhs;
+	}
+
+	/*
+		10倍
+	*/
+
+	CStdBitsetUnsignedNumber multiplication10( void ) const {
+		CStdBitsetUnsignedNumber result;
+		result.m_raw = CStdBitsetUnsignedOperation::Multiplication10( this->m_raw );
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateMultiplication10( void ) {
+		CStdBitsetUnsignedNumber result = multiplication10( );
+		this->m_raw = result.m_raw;
+		return result;
+	}
+
+	/*
+		除算
+	*/
+	SelfOptional  division( const CStdBitsetUnsignedNumber& value ) const {
+		auto pre_result = this->divisionWithRemainder( value );
+		if ( pre_result.has_value( ) ) {
+			CStdBitsetUnsignedNumber result( pre_result->first );
+			return result;
+		}
+		return std::nullopt;
+	}
+
+	SelfOptional  selfUpdateDivision( const CStdBitsetUnsignedNumber& value ) {
+		auto result = this->division( value );
+		if ( result.has_value( ) ) {
+			this->m_raw = result.value( ).m_raw;
+		}
+		return result;
+	}
+
+
+	CStdBitsetUnsignedNumber& operator/=( const CStdBitsetUnsignedNumber& rhs ) {
+
+		if ( rhs.m_raw.none( ) ) throw std::domain_error( "CStdBitsetUnsignedNumber：0除算が発生しました。" );
+
+		SelfOptional result = this->selfUpdateDivision( rhs );
+
+		if ( !result.has_value( ) ) {
+			// 本オペレータの初回実装時において、ここのブロックは(先に0除算チェックをしている影響で)
+			// 実行されないが念のため、例外を発行しておく
+			throw std::domain_error( "CStdBitsetUnsignedNumber：除算の算出に失敗しました。" );
+		}
+
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber operator/( const CStdBitsetUnsignedNumber& rhs ) const {
+		CStdBitsetUnsignedNumber lhs( *this );
+		lhs /= rhs;
+		return lhs;
+	}
+
+	/*
+		剰余
+	*/
+	SelfOptional remainder( const CStdBitsetUnsignedNumber& value ) const {
+		auto pre_result = this->divisionWithRemainder( value );
+		if ( pre_result.has_value( ) ) {
+			CStdBitsetUnsignedNumber result( pre_result->second );
+			return result;
+		}
+		return std::nullopt;
+	}
+
+	SelfOptional  selfUpdateRemainder( const CStdBitsetUnsignedNumber& value ) {
+		auto result = this->remainder( value );
+		if ( result.has_value( ) ) {
+			this->m_raw = result.value( ).m_raw;
+		}
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber& operator%=( const CStdBitsetUnsignedNumber& rhs ) {
+
+		if ( rhs.m_raw.none( ) ) throw std::domain_error( "CStdBitsetUnsignedNumber：0除算が発生しました。" );
+
+		SelfOptional result = this->selfUpdateRemainder( rhs );
+
+		if ( !result.has_value( ) ) {
+			// 本オペレータの初回実装時において、ここのブロックは(先に0除算チェックをしている影響で)
+			// 実行されないが念のため、例外を発行しておく
+			throw std::domain_error( "CStdBitsetUnsignedNumber：剰余の算出に失敗しました。" );
+		}
+
+		return *this;
+	}
+
+	CStdBitsetUnsignedNumber operator%( const CStdBitsetUnsignedNumber& rhs ) const {
+		CStdBitsetUnsignedNumber lhs( *this );
+		lhs %= rhs;
+		return lhs;
+	}
+
+	/*
+		除算・剰余
+	*/
+
+	SelfPairOptional  divisionWithRemainder( const CStdBitsetUnsignedNumber& value ) const {
+		auto pre_result = CStdBitsetUnsignedOperation::DivisionWithRemainder<BitSize>( this->m_raw, value.m_raw );
+		if ( pre_result.has_value( ) ) {
+			return SelfPair( CStdBitsetUnsignedNumber( pre_result->first ), CStdBitsetUnsignedNumber( pre_result->second ) );
+		}
+		return std::nullopt;
+	}
+
+	/*
+		乱数生成系
+	*/
+
+	RealRangeForRandomIssue selfUpdateRandom( const size_t offset = 0, const size_t fill_bit_size = BitSize, const bool partial = false ) {
+
+		return this->selfUpdateRandomExtend( offset, fill_bit_size, OffsetBasis::Least, partial );
+	}
+
+
+	RealRangeForRandomIssue selfUpdateRandomExtend( const  size_t offset = 0, const size_t fill_bit_size = BitSize, const OffsetBasis offset_basis = OffsetBasis::Least, const  bool partial = false ) {
+
+		RealRangeForRandomIssue issue;
+		issue.fill_bit_size = 0;
+		issue.offset_of_least = 0;
+
+
+		if ( !CBitNumberSupport::IsValidIndex<BitSize>( offset ) ) {
+			return issue;
+		}
+
+		std::optional<BitOffsetRange> range = CBitNumberSupport::AdjustOffsetRange( BitSize, offset, fill_bit_size, offset_basis );
+
+		if ( !range.has_value( ) ) {
+			return issue;
+		}
+
+		if ( !partial ) {
+			this->clear( );
+		}
+
+		StdBitset random_bits = CStdBitsetUnsignedOperation::Random<BitSize>( range->size );
+
+		for ( size_t i = 0; i < range->size; i++ ) {
+			this->m_raw[range->offset + i] = random_bits[i];
+		}
+
+		issue.fill_bit_size = range->size;
+		issue.offset_of_least = range->offset;
+
+		return issue;
+	}
+
+
+	static CStdBitsetUnsignedNumber Random( size_t offset = 0, size_t fill_bit_size = BitSize ) {
+		CStdBitsetUnsignedNumber res;
+		res.selfUpdateRandom( offset, fill_bit_size );
+		return res;
+	}
+
+	static CStdBitsetUnsignedNumber RandomExtend( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least ) {
+		CStdBitsetUnsignedNumber res;
+		res.selfUpdateRandomExtend( offset, fill_bit_size, offset_basis );
+		return res;
+	}
+
+
+	static RandomIssueResult RandomWithRangeInfo( size_t offset = 0, size_t fill_bit_size = BitSize ) {
+		RandomIssueResult res;
+		res.realRange = res.value.selfUpdateRandom( offset, fill_bit_size );
+		return res;
+	}
+
+	static RandomIssueResult RandomExtendWithRangeInfo( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least ) {
+		RandomIssueResult res;
+		res.realRange = res.value.selfUpdateRandomExtend( offset, fill_bit_size, offset_basis );
+		return res;
+	}
+
 
 };
