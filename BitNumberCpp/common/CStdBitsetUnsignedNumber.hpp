@@ -1223,3 +1223,7 @@ public:
 
 
 };
+
+
+template<size_t BitSize> using CStdBitsetUnsignedNumberA = CStdBitsetUnsignedNumber<BitSize, char>;
+template<size_t BitSize> using CStdBitsetUnsignedNumberW = CStdBitsetUnsignedNumber<BitSize, wchar_t>;

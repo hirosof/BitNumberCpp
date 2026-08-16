@@ -1,15 +1,15 @@
 #define NOMINMAX
 #include <locale>
-#include "../../common/CUnsignedBitNumber.hpp"
 #include <vector>
 #include <atlstr.h>
 #include <utility>
 #include <algorithm>
+#include "../../common/CStdBitsetUnsignedNumber.hpp"
 
-template <size_t BitSize> using ResultItem = std::pair<std::wstring, std::optional<CUnsignedBitNumberW<BitSize>>>;
+template <size_t BitSize> using ResultItem = std::pair<std::wstring, std::optional<CStdBitsetUnsignedNumberW<BitSize>>>;
 template <size_t BitSize> using ResultArray = std::vector<ResultItem<BitSize>>;
 
-template <size_t BitSize> void bitNumberProcess ( ResultArray <BitSize>& res, const  CUnsignedBitNumberW<BitSize>& num1, const  CUnsignedBitNumberW<BitSize>& num2 ) {
+template <size_t BitSize> void bitNumberProcess ( ResultArray <BitSize>& res, const  CStdBitsetUnsignedNumberW<BitSize>& num1, const  CStdBitsetUnsignedNumberW<BitSize>& num2 ) {
 
 	static_assert( BitSize > 0, "ビットサイズは1以上必要です。" );
 
@@ -47,7 +47,7 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 
 	ResultArray<BitSize> currentRes;
 
-	CUnsignedBitNumberW<BitSize>  num1, num2;
+	CStdBitsetUnsignedNumberW<BitSize>  num1, num2;
 
 
 	size_t valid_random_digits_num1 = std::max( static_cast<size_t>( 1 ), std::min( max_value_bin_digits_num1, BitSize ) );
@@ -85,6 +85,9 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 
 	size_t real_bin_len  , padd_bin_len_of_block , padd_hex_len_of_block;
 
+	std::wstring current_bin_str, current_dec_str, current_hex_str;
+
+
 	for ( size_t resindex = 0; resindex < respack.size( ); resindex++ ) {
 		result.AppendFormat( L"\t\t\"SubCase %zu\":{\n", resindex+1 );
 
@@ -105,19 +108,26 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 				);
 
 
+				current_bin_str = it->second->toBinaryString( CBitsetStringConvSupport::ZeroPaddingMode::NoPadding );
+
 				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
 					L"bin",
-					it->second->template toBinaryString<>( ).c_str()
+					current_bin_str.c_str( )
 				);
+
+
+				current_dec_str = it->second->toDecimalString( );
 
 				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
 					L"dec",
-					it->second->template toDecimalString<>( ).c_str()
+					current_dec_str.c_str( )
 				);
+
+				current_hex_str = it->second->toHexadecimalString( true , CBitsetStringConvSupport::ZeroPaddingMode::NoPadding );
 
 				result.AppendFormat( L"\t\t\t\t\"%s\":\"%s\",\n",
 					L"hex",
-					it->second->template toHexadecimalString<>( true ).c_str()
+					current_hex_str.c_str( )
 				);
 
 
@@ -128,18 +138,18 @@ template <size_t BitSize> std::wstring runProcess(  size_t numberOfSubCases = 1,
 
 				result.AppendFormat( L"\t\t\t\t\t\"%s\":\"%s\",\n",
 					L"bin",
-					Conv::CreateSeparatedStringWithZeroPadded( it->second->template toBinaryString<>( ),
+					Conv::CreateSeparatedStringWithZeroPadded( current_bin_str,
 						4 * padd_bin_len_of_block, 4 ).c_str( )
 				);
 
 				result.AppendFormat( L"\t\t\t\t\t\"%s\":\"%s\",\n",
 					L"dec",
-					Conv::CreateCommaSeparatedString( it->second->template toDecimalString<>( ), 3 ).c_str( )
+					Conv::CreateCommaSeparatedString( current_dec_str, 3 ).c_str( )
 				);
 
 				result.AppendFormat( L"\t\t\t\t\t\"%s\":\"%s\"\n",
 					L"hex",
-					Conv::CreateSeparatedStringWithZeroPadded( it->second->template toHexadecimalString<>( true ),
+					Conv::CreateSeparatedStringWithZeroPadded( current_hex_str,
 						2*padd_hex_len_of_block, 4 ).c_str( )
 				);
 
