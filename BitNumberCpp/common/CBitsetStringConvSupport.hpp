@@ -63,4 +63,12 @@ public:
 
 	};
 
+	template<typename ValueType , typename CharT> class ParsedData {
+	public:
+		ValueType  value;
+		ParseProcessedInfo<CharT> info;
+		ParsedData( ) : value( ), info( ) {}
+	};
+
+
 };

@@ -47,8 +47,12 @@ public:
 
 	using RealRangeForRandomIssue = CBitNumberSupport::RealRangeForRandomIssue;
 	using RandomIssueResult = CBitNumberSupport::RandomIssueResult<CStdBitsetUnsignedNumber>;
-	using ZeroPaddingMode = CStdBitsetUnsignedStringConversion<CharType>::ZeroPaddingMode;
 
+	using StringConv = CStdBitsetUnsignedStringConversion<CharType>;
+	using ZeroPaddingMode =StringConv::ZeroPaddingMode;
+	using OperationForInvalidCharDetected = CBitsetStringConvSupport::OperationForInvalidCharDetected;
+	using StringParseProcessedInfo = CBitsetStringConvSupport::ParseProcessedInfo<CharType>;
+	using StringParsedData = CBitsetStringConvSupport::ParsedData<CStdBitsetUnsignedNumber, CharType>;
 
 private:
 	StdBitset m_raw;
@@ -1015,6 +1019,205 @@ public:
 	static RandomIssueResult RandomExtendWithRangeInfo( size_t offset = 0, size_t fill_bit_size = BitSize, OffsetBasis offset_basis = OffsetBasis::Least ) {
 		RandomIssueResult res;
 		res.realRange = res.value.selfUpdateRandomExtend( offset, fill_bit_size, offset_basis );
+		return res;
+	}
+
+
+	/*
+		文字列への変換系
+	*/
+
+
+	String toBinaryString( ZeroPaddingMode zero_padding_mode = ZeroPaddingMode::NoPadding )const {
+		return StringConv::ToBinaryString( this->m_raw, zero_padding_mode );
+	}
+
+	String toDecimalString( )const {
+		return StringConv::ToDecimalString( this->m_raw );
+	}
+
+	String toHexadecimalString( bool upper_case = false , ZeroPaddingMode zero_padding_mode = ZeroPaddingMode::NoPadding ) const {
+		return StringConv::ToHexadecimalString( this->m_raw, upper_case, zero_padding_mode );
+	}
+
+
+
+	String toJsonLikeString( bool enableSeparate = false , ZeroPaddingMode zero_padding_mode = ZeroPaddingMode::NoPadding )const {
+
+
+		String s, trans;
+
+		//open block
+		s.push_back( '{' );
+		s.push_back( ' ' );
+
+		//bin
+		s.append( { '\"' ,  'b' , 'i' , 'n' , '\"' ,  ':' , '\"' } );
+
+		trans = this->toBinaryString(zero_padding_mode );
+		if ( enableSeparate ) {
+			s.append( StringConv::CreateSpaceSeparatedString( trans, 4 ) );
+		} else {
+			s.append( trans );
+		}
+
+		s.push_back( '\"' );
+
+
+		//dec
+		s.append( { ' ', ',', ' ' } );
+		s.append( { '\"' ,  'd' , 'e' , 'c' , '\"' ,  ':' , '\"' } );
+
+		trans = this->toDecimalString( );
+		if ( enableSeparate ) {
+			s.append( StringConv::CreateCommaSeparatedString( trans, 3 ) );
+		} else {
+			s.append( trans );
+		}
+
+
+		s.push_back( '\"' );
+
+
+		//hex
+		s.append( { ' ', ',', ' ' } );
+		s.append( { '\"' ,  'h' , 'e' , 'x' , '\"' ,  ':' , '\"' } );
+
+		trans = this->toHexadecimalString( true, zero_padding_mode );
+		if ( enableSeparate ) {
+			s.append( StringConv::CreateSpaceSeparatedString( trans, 4 ) );
+		} else {
+			s.append( trans );
+		}
+
+		s.push_back( '\"' );
+
+		//close block
+		s.push_back( ' ' );
+		s.push_back( '}' );
+
+		return s;
+
+
+	}
+
+	/*
+		文字列からの変換系
+	*/
+
+
+	void  fromBinaryString( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		this->fromBinaryStringStrict( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	StringParseProcessedInfo  fromBinaryStringStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv::template FromBinaryStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->m_raw = parsed.value;
+		return parsed.info;
+	}
+
+	void  fromBinaryStringPriorityLSB( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		this->fromBinaryStringPriorityLSBStrict( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	StringParseProcessedInfo  fromBinaryStringPriorityLSBStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv::template FromBinaryStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->m_raw = parsed.value;
+		return parsed.info;
+	}
+
+	void  fromDecimalString( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		this->fromDecimalStringStrict( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	StringParseProcessedInfo  fromDecimalStringStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv::template FromDecimalStringStrict < BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->m_raw = parsed.value;
+		return parsed.info;
+	}
+
+
+	void  fromHexadecimalString( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		this->fromHexadecimalStringStrict( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	StringParseProcessedInfo  fromHexadecimalStringStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv::template FromHexadecimalStringStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->m_raw = parsed.value;
+		return parsed.info;
+	}
+
+	void  fromHexadecimalStringPriorityLSB( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		this->fromHexadecimalStringPriorityLSBStrict( str, OperationForInvalidCharDetected::PartialReturn, valid_separators );
+	}
+
+	StringParseProcessedInfo  fromHexadecimalStringPriorityLSBStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		auto parsed = StringConv::template FromHexadecimalStringPriorityLSBStrict< BitSize>( str, operation_invalid_char_detected, valid_separators );
+		this->m_raw = parsed.value;
+		return parsed.info;
+	}
+
+
+	static  CStdBitsetUnsignedNumber  CreateFromBinaryString( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		CStdBitsetUnsignedNumber ubn;
+		ubn.fromBinaryString( str, valid_separators );
+		return ubn;
+	}
+
+	static  StringParsedData  CreateFromBinaryStringStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		StringParsedData res;
+		res.info = res.value.fromBinaryStringStrict( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+	static  CStdBitsetUnsignedNumber  CreateFromBinaryStringPriorityLSB( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		CStdBitsetUnsignedNumber ubn;
+		ubn.fromBinaryStringPriorityLSB( str, valid_separators );
+		return ubn;
+	}
+
+	static  StringParsedData  CreateFromBinaryStringPriorityLSBStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		StringParsedData res;
+		res.info = res.value.fromBinaryStringPriorityLSBStrict( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+
+
+	static CStdBitsetUnsignedNumber  CreateFromDecimalString( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		CStdBitsetUnsignedNumber ubn;
+		ubn.fromDecimalString( str, valid_separators );
+		return ubn;
+	}
+
+	static  StringParsedData  CreateFromDecimalStringStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		StringParsedData res;
+		res.info = res.value.fromDecimalStringStrict( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+
+	static CStdBitsetUnsignedNumber  CreateFromHexadecimalString( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		CStdBitsetUnsignedNumber ubn;
+		ubn.fromHexadecimalString( str, valid_separators );
+		return ubn;
+	}
+
+	static  StringParsedData  CreateFromHexadecimalStringStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		StringParsedData res;
+		res.info = res.value.fromHexadecimalStringStrict( str, operation_invalid_char_detected, valid_separators );
+		return res;
+	}
+
+	static CStdBitsetUnsignedNumber  CreateFromHexadecimalStringPriorityLSB( const String& str, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		CStdBitsetUnsignedNumber ubn;
+		ubn.fromHexadecimalStringPriorityLSB( str, valid_separators );
+		return ubn;
+	}
+
+	static  StringParsedData  CreateFromHexadecimalStringPriorityLSBStrict( const String& str, const  OperationForInvalidCharDetected operation_invalid_char_detected, const String& valid_separators = StringConv::DEFAULT_VALID_SEPARATORS ) {
+		StringParsedData res;
+		res.info = res.value.fromHexadecimalStringPriorityLSBStrict( str, operation_invalid_char_detected, valid_separators );
 		return res;
 	}
 

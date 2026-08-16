@@ -45,10 +45,10 @@ template <size_t BitSize>  void arithmeticSample( const std::string number1Strin
 
 template<size_t BitSize, typename CharType = char> void DumpStdBitsetUnsignedNumber( const CStdBitsetUnsignedNumber<BitSize, CharType>& number  , bool afterNewLine = false) {
 
-	using Conv = CStdBitsetUnsignedStringConversion<char>;
-	printf( "%s (0x%s)" ,
-		Conv::ToBinaryString( number.getStdBitsetRefConst( ), Conv::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( ),
-		Conv::ToHexadecimalString( number.getStdBitsetRefConst( ), true ,  Conv::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( )	
+	using ZeroPaddingMode = CStdBitsetUnsignedNumber<16>::ZeroPaddingMode;
+
+	printf( "%s" ,
+		 number.toJsonLikeString( true, ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( )
 	);
 
 	if ( afterNewLine ) {
@@ -68,23 +68,13 @@ int main( ) {
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
 
-	CStdBitsetUnsignedNumber<16> n1;
-	CStdBitsetUnsignedNumber<8> n2;	
+	CStdBitsetUnsignedNumber<256> n1;
 
-	n2.fromUInt8( 0xAB );
-
-	DumpStdBitsetUnsignedNumber( n2, true );	
-	printf( "\n" ); 
-	for ( size_t from_offset = 0; from_offset < 8; from_offset++ ) {
-		for ( size_t to_offset = 0; to_offset < 16; to_offset++ ) {
-			n1.fromCast( n2, to_offset, from_offset, CBitNumberSupport::BitOffsetBasis::Most );
-			printf("fromCast to_offset: %zu, from_offset: %zu, n1: ", to_offset, from_offset );
-			DumpStdBitsetUnsignedNumber( n1, true );
-		}
-		printf( "\n" );
+	for ( size_t i = 0; i < 10; i++ ) {
+		n1.selfUpdateRandom( );
+//		n1.selfUpdateRandomExtend( 0, 8, CBitNumberSupport::BitOffsetBasis::MSB, true );
+		DumpStdBitsetUnsignedNumber( n1, true );
 	}
-
-
 
 	return 0;
 }
