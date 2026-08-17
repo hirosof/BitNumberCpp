@@ -6,11 +6,13 @@
 #define NOMINMAX
 #include <windows.h>
 #include <locale>
+#include <chrono>
 #include <vector>
 #include<random>
 #include "../common/CUnsignedBitNumber.hpp"
 #include "../common/CStdBitsetUnsignedNumber.hpp"
 #include "../common/CBitNumberSupport.hpp"
+
 /*
 enum struct NumberType {
 	Binary = 0,
@@ -67,14 +69,12 @@ int main( ) {
 
 	using Conv = CStdBitsetUnsignedStringConversion<char>;
 
-
-	CStdBitsetUnsignedNumber<256> n1;
-
-	for ( size_t i = 0; i < 10; i++ ) {
-		n1.selfUpdateRandom( );
-//		n1.selfUpdateRandomExtend( 0, 8, CBitNumberSupport::BitOffsetBasis::MSB, true );
-		DumpStdBitsetUnsignedNumber( n1, true );
+	CStdBitsetUnsignedNumberA<16384> number1;
+	for ( size_t i = 0; i < 16; i++ ) {
+		number1.selfUpdateRandom( );
+		printf( "Number1 : %s\n", number1.toJsonLikeString( false, CBitsetStringConvSupport::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( ) );
 	}
+
 
 	return 0;
 }

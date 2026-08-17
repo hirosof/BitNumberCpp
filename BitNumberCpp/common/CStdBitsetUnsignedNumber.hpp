@@ -900,6 +900,24 @@ public:
 		return lhs;
 	}
 
+
+	/*
+		10での除算
+	*/
+
+	CStdBitsetUnsignedNumber division10( void ) const {
+		CStdBitsetUnsignedNumber result;
+		result.m_raw = CStdBitsetUnsignedOperation::Division10( this->m_raw );
+		return result;
+	}
+
+	CStdBitsetUnsignedNumber selfUpdateDivision10( void ) {
+		CStdBitsetUnsignedNumber result = division10( );
+		this->m_raw = result.m_raw;
+		return result;
+	}
+
+
 	/*
 		剰余
 	*/
@@ -941,6 +959,25 @@ public:
 		return lhs;
 	}
 
+
+	/*
+		10での剰余
+	*/
+
+	CStdBitsetUnsignedNumber remainder10( void ) const {
+		CStdBitsetUnsignedNumber result;
+		result.m_raw = CStdBitsetUnsignedOperation::Remainder10( this->m_raw );
+		return result;
+	}
+
+
+	CStdBitsetUnsignedNumber selfUpdateRemainder10( void ) {
+		CStdBitsetUnsignedNumber result = remainder10( );
+		this->m_raw = result.m_raw;
+		return result;
+	}
+
+
 	/*
 		除算・剰余
 	*/
@@ -952,6 +989,16 @@ public:
 		}
 		return std::nullopt;
 	}
+
+
+	/*
+		10での除算・剰余
+	*/
+	SelfPair division10WithRemainder( void ) const {
+		auto pre_result = CStdBitsetUnsignedOperation::Division10WithRemainder<BitSize>( this->m_raw );
+		return SelfPair( CStdBitsetUnsignedNumber( pre_result.first ), CStdBitsetUnsignedNumber( pre_result.second ) );
+	}
+
 
 	/*
 		乱数生成系

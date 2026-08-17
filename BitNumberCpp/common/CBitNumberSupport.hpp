@@ -127,11 +127,17 @@ public:
 	static std::optional<BitOffsetRange> AdjustOffsetRange( size_t bit_size, size_t offset, size_t size , BitOffsetBasis basis = BitOffsetBasis::Least ) {
 
 		if ( offset >= bit_size ) return std::nullopt;
-		if ( size == 0 ) return BitOffsetRange( 0, 0, BitOffsetBasis::Least );
+		if ( size == 0 ) { 
+			if ( basis == BitOffsetBasis::Least ) {
+				return BitOffsetRange( offset, 0, BitOffsetBasis::Least );
+			} else {
+				return BitOffsetRange( bit_size - 1 - offset, 0, BitOffsetBasis::Least );
+			}
+		}
 
-		BitOffsetRange range( offset, size, BitOffsetBasis::Least );
+		BitOffsetRange range( offset, size , BitOffsetBasis::Least );
 
-		if ( ( range.offset + range.size - 1 ) >= bit_size ) {
+		if ( (range.size - 1 ) >= (bit_size - range.offset) ) {
 			range.size = bit_size - range.offset;
 		}
 

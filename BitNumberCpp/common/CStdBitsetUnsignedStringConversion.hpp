@@ -22,6 +22,7 @@ public:
 	template<size_t BitSize> using OptionalStdBitset = CStdBitsetUnsignedOperation::OptionalStdBitset<BitSize>;
 	template<size_t BitSize> using StdBitsetConstRef = CStdBitsetUnsignedOperation::StdBitsetConstRef<BitSize>;
 	template <size_t BitSize> using OptionalStdBitsetPair = CStdBitsetUnsignedOperation::OptionalStdBitsetPair<BitSize>;
+	template <size_t BitSize> using StdBitsetPair = CStdBitsetUnsignedOperation::StdBitsetPair<BitSize>;
 
 
 	inline static const String DEFAULT_VALID_SEPARATORS = String( { ' ', ',' } );
@@ -44,15 +45,13 @@ public:
 
 	template<size_t BitSize>	static String ToBinaryString( StdBitsetConstRef<BitSize> bin , ZeroPaddingMode zero_padding_mode = ZeroPaddingMode::NoPadding) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+
 		size_t msb_pos;
 		String result_string;
 
 		size_t padding_size = 0;
 
 		switch ( zero_padding_mode ) {
-			case ZeroPaddingMode::NoPadding:
-				msb_pos = CStdBitsetUnsignedOperation::GetSignificantBitLength( bin ) - 1;
-				break;
 			case ZeroPaddingMode::ContainerBitsPadding:
 				msb_pos = BitSize - 1;
 				break;
@@ -63,6 +62,11 @@ public:
 			case ZeroPaddingMode::ContainerAndEightBitsPadding:
 				msb_pos = BitSize - 1;
 				padding_size = ( 8 - ( msb_pos + 1 ) % 8 ) % 8;
+				break;
+			default:
+				// ZeroPaddingMode::NoPadding (デフォルト)
+				// また、何らかの要因で zero_padding_mode が不正な値になった場合も、NoPadding と同じ動作とする
+				msb_pos = CStdBitsetUnsignedOperation::GetSignificantBitLength( bin ) - 1;
 				break;
 		} 
 
@@ -200,16 +204,14 @@ public:
 
 		String result_string;
 
-		const StdBitset<BitSize>  bit_of_ten( 10 );
 		StdBitset<BitSize> auxiliary( bin );
 		uint8_t current_digit_value;
-		OptionalStdBitsetPair<BitSize> div_10_result;
+		StdBitsetPair<BitSize> div_10_result;
 
 		do {
-			div_10_result = CStdBitsetUnsignedOperation::DivisionWithRemainder( auxiliary, bit_of_ten );
-			if ( div_10_result.has_value( ) == false ) return String( );
-			auxiliary = div_10_result->first;
-			current_digit_value = div_10_result->second.to_ulong( ) & 0xff;
+			div_10_result = CStdBitsetUnsignedOperation::Division10WithRemainder( auxiliary );
+			auxiliary = div_10_result.first;
+			current_digit_value = div_10_result.second.to_ulong( ) & 0xff;
 			result_string.push_back( '0' + current_digit_value );
 		} while ( auxiliary.none( ) == false );
 

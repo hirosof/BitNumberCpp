@@ -180,6 +180,7 @@ public:
 		return std::nullopt;
 	}
 
+
 	template<size_t BitSize>  static OptionalStdBitsetPair<BitSize> DivisionWithRemainder( StdBitsetConstRef<BitSize> input_a, StdBitsetConstRef<BitSize> input_b ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 
@@ -230,6 +231,58 @@ public:
 		return std::pair( ox, auxiliary );
 	}
 
+
+	template<size_t BitSize>  static StdBitset<BitSize> Division10( StdBitsetConstRef<BitSize> input ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		return Division10WithRemainder( input ).first;
+	}
+
+	template<size_t BitSize>  static StdBitset<BitSize> Remainder10( StdBitsetConstRef<BitSize> input ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+		return Division10WithRemainder( input ).second;
+	}
+
+
+	template<size_t BitSize>  static StdBitsetPair<BitSize> Division10WithRemainder( StdBitsetConstRef<BitSize> input ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
+
+		const size_t digit_input = GetSignificantBitLength( input );
+
+		const size_t digit_of_ten = 4; // 10は2進数で1010であり、4ビットで表現できるため
+
+		if ( digit_input < digit_of_ten ) {
+			//  inputが4ビット未満の時 (input < 8 の時)、商：0、あまり：input
+			return std::pair( StdBitset<BitSize>( 0 ), input );
+		}
+
+		const size_t digit_quotient = digit_input - digit_of_ten + 1;
+
+		uint8_t auxiliary = 0;
+
+		StdBitset<BitSize> quotient( 0 );
+
+		for ( size_t i = 0; i < digit_of_ten; i++ ) {
+			auxiliary <<= 1;
+			if ( input[digit_input - 1 - i] ) auxiliary |= 1;
+		}
+
+
+		for ( size_t i = 0; i < digit_quotient; i++ ) {
+
+			if ( auxiliary >= 10 ) {
+				quotient[digit_quotient - 1 - i] = true;
+				auxiliary -= 10;
+			}
+
+			if ( ( i + 1 ) < digit_quotient ) {
+				auxiliary <<= 1;
+				if ( input[digit_input - digit_of_ten - i - 1] ) auxiliary |= 1;
+			}
+
+		}
+
+		return std::pair( quotient, StdBitset<BitSize>( auxiliary ) );
+	}
 
 	template<size_t BitSize>  static size_t GetSignificantBitLength( StdBitsetConstRef<BitSize> input ) {
 		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
@@ -291,6 +344,7 @@ public:
 
 
 	template<size_t BitSize>  static  StdBitset<BitSize> Random( size_t fill_bit_size = BitSize ) {
+		static_assert( BitSize > 0, "BitSizeは無効な値です。" );
 
 		static thread_local  std::mt19937_64   mtRandom( std::random_device {}( ) );
 
