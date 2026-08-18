@@ -300,6 +300,7 @@
     <ClInclude Include="..\common\CStdBitsetUnsignedNumber.hpp" />
     <ClInclude Include="..\common\CStdBitsetUnsignedOperation.hpp" />
     <ClInclude Include="..\common\CStdBitsetUnsignedStringConversion.hpp" />
+    <ClInclude Include="..\common\CStdChronoBasedStopWatch.hpp" />
     <ClInclude Include="..\common\CUnsignedBitNumber.hpp" />
     <ClInclude Include="..\common\CBitsetStringConvSupport.hpp" />
   </ItemGroup>

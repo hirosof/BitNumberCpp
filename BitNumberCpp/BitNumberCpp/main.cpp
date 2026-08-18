@@ -6,79 +6,91 @@
 #define NOMINMAX
 #include <windows.h>
 #include <locale>
-#include <chrono>
-#include <vector>
-#include<random>
 #include "../common/CUnsignedBitNumber.hpp"
 #include "../common/CStdBitsetUnsignedNumber.hpp"
-#include "../common/CBitNumberSupport.hpp"
+#include "../common/CStdChronoBasedStopWatch.hpp"
 
-/*
-enum struct NumberType {
-	Binary = 0,
-	Decimal,
-	Hexadecimal
-};
+template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
+	CStdBitsetUnsignedNumberA<BitSize> number1, ten( 10 );
 
-template <size_t BitSize>  void arithmeticSample( const std::string number1String, const std::string number2String, const NumberType numType = NumberType::Hexadecimal ) {
+	CStdChronoBasedStopWatchA  sw;
+
+	uint64_t processPermille = 0, prevProcessPermille = 0;
+
+	number1.selfUpdateRandom( );
+
+	wprintf( L"=== division10WithRemainder の速度計測 (%zu ビット)===\n", BitSize );
+
+	for ( size_t i = 0; i < loopCount; i++ ) {
+
+		sw.start( );
+		number1.division10WithRemainder( );
+		sw.stop( );
+
+		processPermille = ( i + 1 ) * 1000 / loopCount;
+
+		if ( ( i == 0 || processPermille != prevProcessPermille ) ) {
+			printf( "\rProgress: %llu.%llu%% (%zu / %zu)",
+				processPermille / 10,
+				processPermille % 10, i + 1,
+				loopCount
+			);
 
 
-	CUnsignedBitNumberA<BitSize>  number1, number2;
+			printf( "  Current Elapsed Time : %s", sw.getMilliSecondsString( true ).c_str( ) );
+		}
 
-
-	switch ( numType ) {
-		case NumberType::Binary:
-			number1.fromBinaryString( number1String );
-			number2.fromBinaryString( number2String );
-			break;
-		case NumberType::Decimal:
-			number1.fromDecimalString( number1String );
-			number2.fromDecimalString( number2String );
-			break;
-		case NumberType::Hexadecimal:
-			number1.fromHexadecimalString( number1String );
-			number2.fromHexadecimalString( number2String );
-			break;
+		prevProcessPermille = processPermille;
 	}
+
+	printf( "\nElapsed Time : %s (%s ms)\n\n", sw.getMilliSecondsString( true ).c_str( ), sw.getMilliSecondsString( false ).c_str( ) );
+
+	wprintf( L"=== divisionWithRemainder の速度計測 (%zu ビット)===\n", BitSize );
+
+	sw.reset( );
+	prevProcessPermille = 0;
+
+	for ( size_t i = 0; i < loopCount; i++ ) {
+
+		sw.start( );
+		number1.divisionWithRemainder( ten );
+		sw.stop( );
+
+		processPermille = ( i + 1 ) * 1000 / loopCount;
+
+		if ( ( i == 0 || processPermille != prevProcessPermille ) ) {
+			printf( "\rProgress: %llu.%llu%% (%zu / %zu)",
+				processPermille / 10,
+				processPermille % 10, i + 1,
+				loopCount
+			);
+
+			printf( "  Current Elapsed Time : %s", sw.getMilliSecondsString( true ).c_str( ) );
+
+		}
+
+		prevProcessPermille = processPermille;
+	}
+
+	printf( "\nElapsed Time : %s (%s ms)\n\n", sw.getMilliSecondsString( true ).c_str( ), sw.getMilliSecondsString( false ).c_str( ) );
 
 }
 
-*/
-
-template<size_t BitSize, typename CharType = char> void DumpStdBitsetUnsignedNumber( const CStdBitsetUnsignedNumber<BitSize, CharType>& number  , bool afterNewLine = false) {
-
-	using ZeroPaddingMode = CStdBitsetUnsignedNumber<16>::ZeroPaddingMode;
-
-	printf( "%s" ,
-		 number.toJsonLikeString( true, ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( )
-	);
-
-	if ( afterNewLine ) {
-		printf( "\n" );
-	}
-
-}
 
 int main( ) {
 
 	// 日本語ロケールに設定
-	setlocale( LC_ALL, "Japanese" );
+	std::setlocale( LC_ALL, "ja-JP.UTF-8" );
 
 	// UTF-8コードページに変更
 	SetConsoleOutputCP( CP_UTF8 );
 
-	using Conv = CStdBitsetUnsignedStringConversion<char>;
+	size_t loopCount = 1024;
 
-	CStdBitsetUnsignedNumberA<16384> number1;
-	for ( size_t i = 0; i < 16; i++ ) {
-		number1.selfUpdateRandom( );
-		printf( "Number1 : %s\n", number1.toJsonLikeString( false, CBitsetStringConvSupport::ZeroPaddingMode::ContainerAndEightBitsPadding ).c_str( ) );
-	}
-
+	runSpeedTest<4096>( loopCount );
+	runSpeedTest<8192>( loopCount );
+	runSpeedTest<16384>( loopCount );
+	runSpeedTest<32768>( loopCount );
 
 	return 0;
 }
-
-
-
-

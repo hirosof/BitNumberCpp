@@ -38,5 +38,8 @@
     <ClInclude Include="..\common\CBitNumberSupport.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="..\common\CStdChronoBasedStopWatch.hpp">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
