@@ -2,7 +2,6 @@
 	このファイルは動作チェック用のコードです。
 */
 
-
 #define NOMINMAX
 #include <windows.h>
 #include <locale>
@@ -18,8 +17,14 @@ template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
 	uint64_t processPermille = 0, prevProcessPermille = 0;
 
 	number1.selfUpdateRandom( );
+	number1.set( 0, true, CBitNumberSupport::BitOffsetBasis::Most );
 
-	wprintf( L"=== division10WithRemainder の速度計測 (%zu ビット)===\n", BitSize );
+
+	StdChronoBasedStopWatchStringFormat auto_format = StdChronoBasedStopWatchStringFormat::Auto;
+	StdChronoBasedStopWatchStringFormat no_format = StdChronoBasedStopWatchStringFormat::None;
+
+
+	wprintf( L"=== division10WithRemainder の速度計測 (%zu ビット , %zu 回)===\n", BitSize, loopCount );
 
 	for ( size_t i = 0; i < loopCount; i++ ) {
 
@@ -37,15 +42,15 @@ template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
 			);
 
 
-			printf( "  Current Elapsed Time : %s", sw.getMilliSecondsString( true ).c_str( ) );
+			printf( "  Current Elapsed Time : %s (%s us)", sw.getMicrosecondsString( auto_format ).c_str(), sw.getMicrosecondsString( no_format ).c_str() );
 		}
 
 		prevProcessPermille = processPermille;
 	}
 
-	printf( "\nElapsed Time : %s (%s ms)\n\n", sw.getMilliSecondsString( true ).c_str( ), sw.getMilliSecondsString( false ).c_str( ) );
+	printf( "\nFinal Elapsed Time : %s  (%s us)\n\n", sw.getMicrosecondsString( auto_format ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
 
-	wprintf( L"=== divisionWithRemainder の速度計測 (%zu ビット)===\n", BitSize );
+	wprintf( L"=== divisionWithRemainder の速度計測 (%zu ビット , %zu 回)===\n", BitSize, loopCount );
 
 	sw.reset( );
 	prevProcessPermille = 0;
@@ -65,17 +70,29 @@ template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
 				loopCount
 			);
 
-			printf( "  Current Elapsed Time : %s", sw.getMilliSecondsString( true ).c_str( ) );
+			printf( "  Current Elapsed Time : %s (%s us)", sw.getMicrosecondsString( auto_format ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
 
 		}
 
 		prevProcessPermille = processPermille;
 	}
 
-	printf( "\nElapsed Time : %s (%s ms)\n\n", sw.getMilliSecondsString( true ).c_str( ), sw.getMilliSecondsString( false ).c_str( ) );
+	printf( "\nFinal Elapsed Time : %s  (%s us)\n\n", sw.getMicrosecondsString( auto_format ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
 
 }
 
+
+void SpeedTestEntry( ) {
+
+	size_t loopCount = 128;
+	runSpeedTest<1024>( loopCount );
+	runSpeedTest<2048>( loopCount );
+	runSpeedTest<4096>( loopCount );
+	runSpeedTest<8192>( loopCount );
+	runSpeedTest<16384>( loopCount );
+	runSpeedTest<32768>( loopCount );
+
+}
 
 int main( ) {
 
@@ -85,12 +102,9 @@ int main( ) {
 	// UTF-8コードページに変更
 	SetConsoleOutputCP( CP_UTF8 );
 
-	size_t loopCount = 1024;
 
-	runSpeedTest<4096>( loopCount );
-	runSpeedTest<8192>( loopCount );
-	runSpeedTest<16384>( loopCount );
-	runSpeedTest<32768>( loopCount );
+	SpeedTestEntry( );
+
 
 	return 0;
 }
