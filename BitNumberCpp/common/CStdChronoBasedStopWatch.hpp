@@ -38,7 +38,7 @@ private:
 		uint8_t current_digit_value;
 
 		do {
-			current_digit_value = auxiliary % 10;
+			current_digit_value = static_cast<uint8_t>( auxiliary % 10 );
 			auxiliary /= 10;
 			result.push_back( static_cast<CharType>( '0' + current_digit_value ) );
 		} while ( auxiliary > 0 );
