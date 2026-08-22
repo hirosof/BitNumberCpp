@@ -20,7 +20,7 @@ template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
 	number1.set( 0, true, CBitNumberSupport::BitOffsetBasis::Most );
 
 
-	StdChronoBasedStopWatchStringFormat auto_format = StdChronoBasedStopWatchStringFormat::Auto;
+	StdChronoBasedStopWatchStringFormat format_type = StdChronoBasedStopWatchStringFormat::HHMMSSWithFractionalSeconds;
 	StdChronoBasedStopWatchStringFormat no_format = StdChronoBasedStopWatchStringFormat::None;
 
 
@@ -42,13 +42,13 @@ template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
 			);
 
 
-			printf( "  Current Elapsed Time : %s (%s us)", sw.getMicrosecondsString( auto_format ).c_str(), sw.getMicrosecondsString( no_format ).c_str() );
+			printf( "  Current Elapsed Time : %s (%s us)", sw.getMicrosecondsString( format_type ).c_str(), sw.getMicrosecondsString( no_format ).c_str() );
 		}
 
 		prevProcessPermille = processPermille;
 	}
 
-	printf( "\nFinal Elapsed Time : %s  (%s us)\n\n", sw.getMicrosecondsString( auto_format ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
+	printf( "\nFinal Elapsed Time : %s  (%s us)\n\n", sw.getMicrosecondsString( format_type ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
 
 	wprintf( L"=== divisionWithRemainder の速度計測 (%zu ビット , %zu 回)===\n", BitSize, loopCount );
 
@@ -70,28 +70,30 @@ template <size_t BitSize> void runSpeedTest( size_t loopCount = 1024 ) {
 				loopCount
 			);
 
-			printf( "  Current Elapsed Time : %s (%s us)", sw.getMicrosecondsString( auto_format ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
+			printf( "  Current Elapsed Time : %s (%s us)", sw.getMicrosecondsString( format_type ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
 
 		}
 
 		prevProcessPermille = processPermille;
 	}
 
-	printf( "\nFinal Elapsed Time : %s  (%s us)\n\n", sw.getMicrosecondsString( auto_format ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
+	printf( "\nFinal Elapsed Time : %s  (%s us)\n\n", sw.getMicrosecondsString( format_type ).c_str( ), sw.getMicrosecondsString( no_format ).c_str( ) );
 
 }
 
 
 void SpeedTestEntry( ) {
 
-	size_t loopCount = 128;
-	runSpeedTest<1024>( loopCount );
+	size_t loopCount = 1024;
+	runSpeedTest<8192>( loopCount );
+
+	/*
 	runSpeedTest<2048>( loopCount );
 	runSpeedTest<4096>( loopCount );
 	runSpeedTest<8192>( loopCount );
 	runSpeedTest<16384>( loopCount );
 	runSpeedTest<32768>( loopCount );
-
+	*/
 }
 
 int main( ) {
@@ -104,7 +106,6 @@ int main( ) {
 
 
 	SpeedTestEntry( );
-
 
 	return 0;
 }

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <algorithm>
+#include <mutex>
 
 enum struct StdChronoBasedStopWatchStringFormat {
 	None,
@@ -29,6 +30,7 @@ private:
 	StdClock::time_point m_tp_begin;
 	StdDuration m_pastAccumulatedDuration;
 
+	mutable std::recursive_mutex m_mutex;
 
 	static StdString UInt64ToString( uint64_t value, size_t min_digit ) {
 
@@ -220,16 +222,17 @@ public:
 		return HHMMSSToFormattedStdString( StdDurationToSecondsHHMMSS( d ), format );
 	}
 
-	CStdChronoBasedStopWatch( ) : m_isMeasuring( false ), m_tp_begin( ), m_pastAccumulatedDuration( StdDuration::zero( ) ) {
+	CStdChronoBasedStopWatch( ) : m_isMeasuring( false ), m_tp_begin( ), m_pastAccumulatedDuration( StdDuration::zero( ) ) , m_mutex( ) {
 
 	}
 
-
 	bool isMeasuring( void ) const {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
 		return m_isMeasuring;
 	}
 
 	void start( void ) {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
 		if ( !m_isMeasuring ) {
 			m_tp_begin = StdClock::now( );
 			m_isMeasuring = true;
@@ -237,6 +240,7 @@ public:
 	}
 
 	StdDuration stop( void ) {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
 		if ( m_isMeasuring ) {
 			m_pastAccumulatedDuration = get( );
 			m_isMeasuring = false;
@@ -245,16 +249,19 @@ public:
 	}
 
 	void reset( void ) {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
 		m_pastAccumulatedDuration = StdDuration::zero( );
 		m_isMeasuring = false;
 	}
 
 	void resetAndStart( void ) {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
 		reset( );
 		start( );
 	}
 
 	StdDuration get( void ) const {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
 		if ( m_isMeasuring ) {
 			StdClock::time_point tp_end = StdClock::now( );
 			return m_pastAccumulatedDuration + ( tp_end - m_tp_begin );
