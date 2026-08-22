@@ -435,3 +435,7 @@ temp
 # Build フォルダは除外
 
 Build
+
+# distフォルダは除外
+
+dist
