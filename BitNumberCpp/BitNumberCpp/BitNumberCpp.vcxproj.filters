@@ -20,9 +20,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\CUnsignedBitNumber.hpp">
-      <Filter>ヘッダー ファイル</Filter>
-    </ClInclude>
     <ClInclude Include="..\common\CStdBitsetUnsignedOperation.hpp">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>

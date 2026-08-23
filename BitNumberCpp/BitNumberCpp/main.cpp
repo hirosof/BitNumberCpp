@@ -6,7 +6,6 @@
 #include <windows.h>
 #include <locale>
 #include <thread>
-#include "../common/CUnsignedBitNumber.hpp"
 #include "../common/CStdBitsetUnsignedNumber.hpp"
 #include "../common/CStdChronoBasedStopWatch.hpp"
 
