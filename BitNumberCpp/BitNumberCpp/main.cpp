@@ -5,6 +5,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <locale>
+#include <thread>
 #include "../common/CUnsignedBitNumber.hpp"
 #include "../common/CStdBitsetUnsignedNumber.hpp"
 #include "../common/CStdChronoBasedStopWatch.hpp"
@@ -105,7 +106,29 @@ int main( ) {
 	SetConsoleOutputCP( CP_UTF8 );
 
 
-	SpeedTestEntry( );
+	CStdChronoBasedStopWatchA sw;
+
+	printf("CStdChronoBasedStopWatchAで計測中です・・・\n" );
+	sw.start( );
+
+	std::this_thread::sleep_for( std::chrono::milliseconds( 5123 ) );
+
+	sw.stop( );
+
+
+	printf( "Elapsed Time : %s (%s ms)\n", sw.getMillisecondsString( StdChronoBasedStopWatchStringFormat::HHMMSSWithFractionalSeconds ).c_str( ), sw.getMillisecondsString( StdChronoBasedStopWatchStringFormat::None ).c_str( ) );
+
+
+	CStdChronoBasedStopWatchThreadSafeA sw_thread_safe;
+
+	printf( "CStdChronoBasedStopWatchThreadSafeAで計測中です・・・\n" );
+	sw_thread_safe.start( );
+
+	std::this_thread::sleep_for( std::chrono::milliseconds( 5123 ) );
+
+	sw_thread_safe.stop( );
+
+	printf( "Elapsed Time (Thread Safe) : %s (%s ms)\n", sw_thread_safe.getMillisecondsString( StdChronoBasedStopWatchStringFormat::HHMMSSWithFractionalSeconds ).c_str( ), sw_thread_safe.getMillisecondsString( StdChronoBasedStopWatchStringFormat::None ).c_str( ) );
 
 	return 0;
 }

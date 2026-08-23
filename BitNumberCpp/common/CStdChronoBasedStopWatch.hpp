@@ -67,25 +67,8 @@ enum struct StdChronoBasedStopWatchStringFormat {
 		測定開始、停止、リセット、および経過時間の取得が可能です。<br>
 		また、経過時間を指定されたフォーマットで文字列化する機能も提供します。
 	@remarks
-		操作系の関数は内部ミューテックスで排他制御されているため、マルチスレッド環境でも安全に使用できます。 <br>
-		ただし、複数の関数の呼び出しは、排他制御の対象外であるため、必要に応じて外部で排他処理を行ってください。<br>
-		<br>
-		例えば、以下で定義されるfunc1とfunc2が別のスレッドからほぼ同時に呼び出された場合、func1におけるisMeasuringの値が、trueになることを保証することができません。<br>
-		これは、 func1 の start() と isMeasuring() の間に、別のスレッドから呼び出された func2 において、 stop() が呼び出される可能性があるためです。<br>
-		@code{.cpp}
-		CStdChronoBasedStopWatch<char> sw;
-
-		void func1(void) {
-			bool isMeasuring;
-
-			sw.start( );
-			isMeasuring = sw.isMeasuring( );
-		}
-
-		void func2(void) {
-			sw.stop( );
-		}
-		@endcode
+		スレッドセーフではありませんので、マルチスレッド環境で使用する場合は、別途、排他処理を行うか、<br>
+		CStdChronoBasedStopWatchThreadSafe クラスを使用してください。
 **/
 template <typename CharType> class CStdChronoBasedStopWatch {
 
@@ -113,9 +96,6 @@ private:
 
 	/// 過去の累積測定時間
 	StdDuration m_pastAccumulatedDuration;
-
-	/// 排他制御用の再帰的ミューテックス
-	mutable std::recursive_mutex m_mutex;
 
 	/**
 		@brief  uint64_t 型の値を文字列に変換する
@@ -411,16 +391,23 @@ public:
 		return HHMMSSToFormattedStdString( StdDurationToSecondsHHMMSS( d ), format );
 	}
 
-	CStdChronoBasedStopWatch( ) : m_isMeasuring( false ), m_tp_begin( ), m_pastAccumulatedDuration( StdDuration::zero( ) ), m_mutex( ) {
+	CStdChronoBasedStopWatch( ) : m_isMeasuring( false ), m_tp_begin( ), m_pastAccumulatedDuration( StdDuration::zero( ) ) {
 
 	}
+
+	CStdChronoBasedStopWatch( const CStdChronoBasedStopWatch & ) = delete;	
+	CStdChronoBasedStopWatch& operator=( const CStdChronoBasedStopWatch& ) = delete;
+	CStdChronoBasedStopWatch( CStdChronoBasedStopWatch&& ) = delete;
+	CStdChronoBasedStopWatch& operator=( CStdChronoBasedStopWatch&& ) = delete;
+
+	virtual ~CStdChronoBasedStopWatch( ) {}
+
 
 	/**
 		@brief  測定中かどうかを取得する
 		@return  測定中であれば true、それ以外は false
 	**/
-	bool isMeasuring( void ) const {
-		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+	virtual bool isMeasuring( void ) const {
 		return m_isMeasuring;
 	}
 
@@ -429,8 +416,7 @@ public:
 
 		過去の測定結果は保持されるため、stop() で停止した後に start() を呼び出すと、以前の測定結果に加算される。
 	**/
-	void start( void ) {
-		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+	virtual void start( void ) {
 		if ( !m_isMeasuring ) {
 			m_tp_begin = StdClock::now( );
 			m_isMeasuring = true;
@@ -441,10 +427,9 @@ public:
 		@brief  測定を停止する (測定していない場合は何もしない)
 		@return  停止後の累積測定時間
 	**/
-	StdDuration stop( void ) {
-		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+	virtual StdDuration stop( void ) {
 		if ( m_isMeasuring ) {
-			m_pastAccumulatedDuration = get( );
+			m_pastAccumulatedDuration = CStdChronoBasedStopWatch::get( );
 			m_isMeasuring = false;
 		}
 		return m_pastAccumulatedDuration;
@@ -455,8 +440,7 @@ public:
 
 		過去の測定結果は破棄されるため、リセット後に start() を呼び出すと、0 からの測定が開始される。
 	**/
-	void reset( void ) {
-		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+	virtual void reset( void ) {
 		m_pastAccumulatedDuration = StdDuration::zero( );
 		m_isMeasuring = false;
 	}
@@ -464,10 +448,9 @@ public:
 	/**
 		@brief  測定をリセットして開始する
 	**/
-	void resetAndStart( void ) {
-		std::lock_guard<std::recursive_mutex> lock( m_mutex );
-		reset( );
-		start( );
+	virtual void resetAndStart( void ) {
+		CStdChronoBasedStopWatch::reset( );
+		CStdChronoBasedStopWatch::start( );
 	}
 
 
@@ -475,8 +458,7 @@ public:
 		@brief  現在の累積測定時間を取得する
 		@return  測定中であれば現在の累積測定時間、それ以外は過去の累積測定時間
 	**/
-	StdDuration get( void ) const {
-		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+	virtual StdDuration get( void ) const {
 		if ( m_isMeasuring ) {
 			StdClock::time_point tp_end = StdClock::now( );
 			return m_pastAccumulatedDuration + ( tp_end - m_tp_begin );
@@ -594,3 +576,116 @@ using CStdChronoBasedStopWatchA = CStdChronoBasedStopWatch<char>;
 
 /// @brief  wchar_t 型を使用する CStdChronoBasedStopWatch のエイリアス
 using CStdChronoBasedStopWatchW = CStdChronoBasedStopWatch<wchar_t>;
+
+
+/**
+
+	@class   CStdChronoBasedStopWatchThreadSafe
+	@brief   スレッドセーフなストップウォッチクラス ( std::chrono ベース )
+	@tparam  CharType - char または wchar_t などの文字型
+	@details
+		このクラスは、 CStdChronoBasedStopWatchのスレッドセーフ版であり、<br>
+		std::chrono をベースとしたストップウォッチ機能を提供します。<br>
+		測定開始、停止、リセット、および経過時間の取得が可能です。<br>
+		また、経過時間を指定されたフォーマットで文字列化する機能も提供します。
+	@remarks
+		このクラスは、CStdChronoBasedStopWatch クラスを継承しており、操作・取得系の関数の内部で再帰的ミューテックスを使用して排他制御を行っており、<br>
+		マルチスレッド環境でも安全に使用できます。ただし、複数の関数の呼び出しは、排他制御の対象外であるため、必要に応じて外部で排他処理を行ってください。<br>
+		<br>
+		例えば、以下で定義されるfunc1とfunc2が別のスレッドからほぼ同時に呼び出された場合、func1におけるisMeasuringの値が、trueになることを保証することができません。<br>
+		これは、 func1 の start() と isMeasuring() の間に、別のスレッドから呼び出された func2 において、 stop() が呼び出される可能性があるためです。<br>
+		@code{.cpp}
+		CStdChronoBasedStopWatchThreadSafe<char> sw;
+
+		void func1(void) {
+			bool isMeasuring;
+
+			sw.start( );
+			isMeasuring = sw.isMeasuring( );
+		}
+
+		void func2(void) {
+			sw.stop( );
+		}
+		@endcode
+
+**/
+template <typename CharType> class CStdChronoBasedStopWatchThreadSafe  final : public CStdChronoBasedStopWatch<CharType> {
+
+private:
+	/// 排他制御用の再帰的ミューテックス
+	mutable std::recursive_mutex m_mutex;
+public:
+
+	/// 基底の CStdChronoBasedStopWatch<CharType> 型のエイリアス
+	using BaseType = CStdChronoBasedStopWatch<CharType>;
+
+
+	CStdChronoBasedStopWatchThreadSafe(){}
+	CStdChronoBasedStopWatchThreadSafe( const CStdChronoBasedStopWatchThreadSafe& ) = delete;
+	CStdChronoBasedStopWatchThreadSafe& operator=( const CStdChronoBasedStopWatchThreadSafe& ) = delete;
+	CStdChronoBasedStopWatchThreadSafe( CStdChronoBasedStopWatchThreadSafe&& ) = delete;
+	CStdChronoBasedStopWatchThreadSafe& operator=( CStdChronoBasedStopWatchThreadSafe&& ) = delete;
+
+	/**
+		@brief  CStdChronoBasedStopWatch<CharType>::isMeasuring()に対し、排他制御を行ったスレッドセーフ版です。<br>
+		戻り値を含む詳細は CStdChronoBasedStopWatch<CharType>::isMeasuring() を参照してください。
+	**/
+	bool isMeasuring( void ) const override {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+		return BaseType::isMeasuring( );
+	}
+
+	/**
+		@brief CStdChronoBasedStopWatch<CharType>::start()に対し、排他制御を行ったスレッドセーフ版です。<br>
+		詳細は CStdChronoBasedStopWatch<CharType>::start() を参照してください。
+	**/
+	void start( void ) override {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+		BaseType::start( );
+	}
+
+	/**
+		@brief  CStdChronoBasedStopWatch<CharType>::stop()に対し、排他制御を行ったスレッドセーフ版です。<br>
+		戻り値を含む詳細は CStdChronoBasedStopWatch<CharType>::stop() を参照してください。
+	**/
+	BaseType::StdDuration stop( void ) override {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+		return BaseType::stop( );
+	}
+
+	/**
+		@brief  CStdChronoBasedStopWatch<CharType>::reset()に対し、排他制御を行ったスレッドセーフ版です。<br>
+		詳細は CStdChronoBasedStopWatch<CharType>::reset() を参照してください。
+	**/
+	void reset( void ) override {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+		BaseType::reset( );
+	}
+
+	/**
+		@brief  CStdChronoBasedStopWatch<CharType>::resetAndStart()に対し、排他制御を行ったスレッドセーフ版です。<br>
+		詳細は CStdChronoBasedStopWatch<CharType>::resetAndStart() を参照してください。
+	**/
+	void resetAndStart( void ) override {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+		BaseType::resetAndStart( );
+	}
+
+
+	/**
+		@brief  CStdChronoBasedStopWatch<CharType>::get()に対し、排他制御を行ったスレッドセーフ版です。<br>
+		戻り値を含む詳細は CStdChronoBasedStopWatch<CharType>::get() を参照してください。
+	**/
+	BaseType::StdDuration get( void ) const override {
+		std::lock_guard<std::recursive_mutex> lock( m_mutex );
+		return BaseType::get( );
+	}
+};
+
+
+/// @brief  char 型を使用する CStdChronoBasedStopWatchThreadSafe のエイリアス
+using CStdChronoBasedStopWatchThreadSafeA = CStdChronoBasedStopWatchThreadSafe<char>;
+
+/// @brief  wchar_t 型を使用する CStdChronoBasedStopWatchThreadSafe のエイリアス
+using CStdChronoBasedStopWatchThreadSafeW = CStdChronoBasedStopWatchThreadSafe<wchar_t>;
