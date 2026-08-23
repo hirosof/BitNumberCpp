@@ -395,12 +395,12 @@ public:
 
 	}
 
-	CStdChronoBasedStopWatch( const CStdChronoBasedStopWatch & ) = delete;	
+	CStdChronoBasedStopWatch( const CStdChronoBasedStopWatch & ) = delete;
 	CStdChronoBasedStopWatch& operator=( const CStdChronoBasedStopWatch& ) = delete;
 	CStdChronoBasedStopWatch( CStdChronoBasedStopWatch&& ) = delete;
 	CStdChronoBasedStopWatch& operator=( CStdChronoBasedStopWatch&& ) = delete;
 
-	virtual ~CStdChronoBasedStopWatch( ) {}
+	virtual ~CStdChronoBasedStopWatch( ) = default;
 
 
 	/**
@@ -621,7 +621,7 @@ public:
 	using BaseType = CStdChronoBasedStopWatch<CharType>;
 
 
-	CStdChronoBasedStopWatchThreadSafe(){}
+	CStdChronoBasedStopWatchThreadSafe( ) = default;
 	CStdChronoBasedStopWatchThreadSafe( const CStdChronoBasedStopWatchThreadSafe& ) = delete;
 	CStdChronoBasedStopWatchThreadSafe& operator=( const CStdChronoBasedStopWatchThreadSafe& ) = delete;
 	CStdChronoBasedStopWatchThreadSafe( CStdChronoBasedStopWatchThreadSafe&& ) = delete;
