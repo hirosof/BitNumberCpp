@@ -1,10 +1,10 @@
+/**
 
-/*
-以下にまとめた内容をベースに操作関連のクラス実装化 + 追加独自実装あり
-https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
-
-開発環境：Visual Studio 2026
-*/
+    @file      CStdBitsetUnsignedOperation.hpp
+	@brief     標準ビットセット(std::bitset)を用いた符号なし整数の演算操作クラスが実装されているヘッダーファイル
+    @author    hirosof
+    @copyright (C) 2026 hirosof.
+**/
 
 #pragma once
 #include <bitset>
@@ -14,6 +14,19 @@ https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
 #include <random>
 #include "CBitNumberSupport.hpp"
 
+
+/**
+
+    @class   CStdBitsetUnsignedOperation
+    @brief   標準ビットセット(std::bitset)を用いた符号なし整数の演算操作クラス
+    @details 
+		このクラスは、標準ビットセット(std::bitset)を用いた符号なし整数の演算操作を提供します。<br>
+		加算、減算、乗算、除算などの基本的な算術演算に加え、ビット操作もサポートしています。<br>
+		また、ビットサイズの変換や比較操作も提供されており、柔軟なビット演算が可能です。<br>
+		<br>
+		なお、一部は過去に以下にまとめた内容をベースに実装したものです。<br>
+		https://gist.github.com/hirosof/2dad279fc120d476a7079506cfab2572
+**/
 class CStdBitsetUnsignedOperation {
 public:
 	template<size_t BitSize> using StdBitset = std::bitset<BitSize>;
