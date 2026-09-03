@@ -78,7 +78,7 @@ public:
 	/**
 	 * @brief 無効文字マップの型定義
 	 * @tparam CharT - 文字型
-	 * @details std::mapのキーは無効文字、値はその文字が出現したインデックスの集合(std::set)です。
+	 * @details std::mapのキーは無効文字、値はその文字が出現したインデックス(0ベース)の集合(std::set)です。
 	 */
 	template <typename CharT>  using InvalidCharMapType = std::map<CharT, std::set<size_t>>;
 
@@ -93,6 +93,7 @@ public:
 
 		/**
 		*	 @brief 無効文字の総数
+		*   @warning この値は、無効文字が出現した回数の総和であり、無効文字の種類の数ではありません。
 		*/
 		size_t countOfInvalidChars;
 
