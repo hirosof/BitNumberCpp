@@ -107,7 +107,7 @@ public:
 
 				result.info.countOfInvalidChars++;
 
-				result.info.invalidCharMap[c].push_back( str.length( ) - std::distance( str.rbegin( ), rev_it ) - 1 );
+				result.info.invalidCharMap[c].insert( str.length( ) - std::distance( str.rbegin( ), rev_it ) - 1 );
 
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
@@ -158,7 +158,7 @@ public:
 
 				result.info.countOfInvalidChars++;
 
-				result.info.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
+				result.info.invalidCharMap[c].insert( std::distance( str.begin( ), it ) );
 
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
@@ -261,7 +261,7 @@ public:
 
 				result.info.countOfInvalidChars++;
 
-				result.info.invalidCharMap[c].push_back( std::distance( str.begin( ), it ) );
+				result.info.invalidCharMap[c].insert( std::distance( str.begin( ), it ) );
 
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
@@ -376,7 +376,7 @@ public:
 				continue;
 			} else {
 				result.info.countOfInvalidChars++;
-				result.info.invalidCharMap[c].push_back( i );
+				result.info.invalidCharMap[c].insert( i );
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
 						return result;
@@ -479,7 +479,7 @@ public:
 				continue;
 			} else {
 				result.info.countOfInvalidChars++;
-				result.info.invalidCharMap[c].push_back( realIndex );
+				result.info.invalidCharMap[c].insert( realIndex );
 				switch ( operation_invalid_char_detected ) {
 					case OperationForInvalidCharDetected::PartialReturn:
 						return result;

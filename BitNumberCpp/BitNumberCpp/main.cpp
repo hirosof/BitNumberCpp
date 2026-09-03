@@ -8,7 +8,7 @@
 #include <thread>
 #include "../common/CStdBitsetUnsignedNumber.hpp"
 #include "../common/CStdChronoBasedStopWatch.hpp"
-
+#include <set>
 
 struct SpeedTestResult {
 	size_t bitSize;
@@ -304,12 +304,38 @@ int main( ) {
 	  */
 
 
-	auto ret = CStdBitsetUnsignedStringConversion<char>::FromHexadecimalStringStrict<10>( "323",
+	auto ret0 = CStdBitsetUnsignedStringConversion<char>::FromHexadecimalStringStrict<32>( "1F4A",
 		CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn );
 
-	uint32_t value = ret.value.to_ulong( );
-	printf("%u %x\n", value, value );
+	std::string sbin = CStdBitsetUnsignedStringConversion<char>::ToBinaryString<32>( ret0.value, CBitsetStringConvSupport::ZeroPaddingMode::EightBitsPadding );
 
+	sbin = CStdBitsetUnsignedStringConversion<char>::CreateSpaceSeparatedString( sbin, 4 );
+
+	printf("%s\n", sbin.c_str( ) );
+	
+
+	auto ret = CStdBitsetUnsignedStringConversion<char>::FromHexadecimalStringStrict<10>( "1F4A",
+		CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn );
+
+
+	sbin = CStdBitsetUnsignedStringConversion<char>::ToBinaryString( ret.value, CBitsetStringConvSupport::ZeroPaddingMode::EightBitsPadding );
+
+	sbin = CStdBitsetUnsignedStringConversion<char>::CreateSpaceSeparatedString( sbin, 4 );
+
+	printf("%s\n", sbin.c_str( ));
+
+
+
+	std::vector<CStdBitsetUnsignedOperation::StdBitset<32>> vec;
+	vec.push_back( CStdBitsetUnsignedStringConversion<char>::FromBinaryStringPriorityLSBStrict<32>( "0001 1111 0100 1010", CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn ).value );
+	vec.push_back( CStdBitsetUnsignedStringConversion<char>::FromBinaryStringStrict<32>( "0001 1111 0100 1010", CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn ).value );
+	vec.push_back( CStdBitsetUnsignedStringConversion<char>::FromHexadecimalStringStrict<32>( "1F4A", CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn ).value );
+	vec.push_back( CStdBitsetUnsignedStringConversion<char>::FromHexadecimalStringPriorityLSBStrict<32>( "1F4A", CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn ).value );
+	vec.push_back( CStdBitsetUnsignedStringConversion<char>::FromDecimalStringStrict<32>( "1000", CBitsetStringConvSupport::OperationForInvalidCharDetected::PartialReturn ).value );
+
+
+
+	
 	/*
 	CStdChronoBasedStopWatchA sw;
 
