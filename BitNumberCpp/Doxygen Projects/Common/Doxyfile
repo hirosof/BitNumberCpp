@@ -1981,7 +1981,7 @@ MAN_LINKS              = NO
 # に設定されている場合、Doxygenはすべてのドキュメントを含むコードの構造を記録したXMLファイルを生成します。
 # デフォルト値は NO です。
 
-GENERATE_XML           = NO
+GENERATE_XML           = YES
 
 # XML_OUTPUT
 # タグは、XMLページが配置される場所を指定するために使用されます。相対パスが入力された場合、OUTPUT_DIRECTORYの値がその前に配置されます。

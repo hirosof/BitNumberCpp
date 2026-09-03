@@ -269,6 +269,8 @@ public:
 		}
 
 		// フォーマットに応じた文字列生成
+
+		//MMの調整値
 		uint64_t adjustment_mm_value = 0;
 
 		// HHの処理
